@@ -1,0 +1,56 @@
+﻿$def with (form)
+
+<html>
+
+<head>
+<title>u2py - web interface</title>
+<script type="text/javascript" src="/static/jquery-1.8.0.min.js"></script>
+<script>
+jQuery(function() {
+    function generateRequest() {
+        var request = JSON.stringify({
+            reader : parseInt(jQuery('#main #reader').val()),
+            amount : parseInt(jQuery('#main #amount').val())
+        },null,3)
+
+        jQuery('#main #Request').val(request)
+    }
+
+    generateRequest()
+
+    jQuery('#main #Generate').click(function(event) {
+        event.preventDefault()
+        generateRequest()
+    })
+
+    jQuery('#main #Send').click(function(event) {
+        event.preventDefault()
+
+        jQuery.ajax({
+            type: jQuery('#main #method').val(),
+            url: jQuery('#main #URL').val(),
+            contentType: 'application/json',
+            dataType: 'json',
+            data: jQuery('#main #Request').val(),
+            success: function(data, textStatus, jqXHR) {
+                jQuery('#main #Response').val(JSON.stringify(data,null,3))
+            },
+            error : function(request, textStatus, errorThrown) {
+                alert(errorThrown)
+            }
+        })
+    })
+})
+</script>
+</head>
+
+<body>
+
+<form id="main" name="main" method="post">
+$if not form.valid: <p class="error">Try again</p>
+$:form.render()
+</form>
+
+</body>
+
+</html>
