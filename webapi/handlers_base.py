@@ -6,7 +6,12 @@ if __name__ == '__main__':
 import config
 import web
 from json import JSONEncoder,dumps,loads
-from time import clock
+from sys import platform
+if platform == 'win32':
+ from time import clock as clock
+
+if platform == 'linux2':
+ from time import time as clock
 
 from u2py.config import logging,reader_path
 from u2py.mfex import MFEx

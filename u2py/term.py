@@ -110,24 +110,37 @@ class TRANSPORT_TYPE(DumpableStructure):
  _pack_ = 1
  _fields_ = [('flags',c_uint8)]
 
+class PACK_A(DumpableStructure):
+ _pack_ = 1
+ _fields_ = [
+  ('priority'                ,c_uint64,2),
+  ('sn'                      ,c_uint64,32),
+  ('sale_aid'                ,c_uint64,12),
+  ('place'                   ,c_uint64,12),
+  ('device_number'           ,c_uint64,6),
+ ]
+
+class PACK_B(DumpableStructure):
+ _pack_ = 1
+ _fields_ = [
+  ('autoload_status'           ,c_uint16,2),
+  ('validity_duration_unit'    ,c_uint16,4),
+  ('validity_duration'         ,c_uint16,10),
+ ]
+
 class TERM_STATIC(DumpableStructure):
  _pack_ = 1
  _fields_ = [
 
   #block0
   ('id'                      ,c_uint8),
-  ('version'                 ,c_uint8,6),
-  ('bitmap'                  ,c_uint8,2),
+  ('version'                 ,c_uint8),
   ('aid'                     ,c_uint32,12),
   ('pix'                     ,c_uint32,12),
   ('status'                  ,c_uint32,8),
-  ('priority'                ,c_uint64,2),
-  ('sn'                     ,c_uint64,32),
-  ('sale_aid'               ,c_uint64,12),
-  ('place'                  ,c_uint64,12),
-  ('device_number'          ,c_uint64,6),
-  ('device_type'            ,c_uint8,4),
-  ('data_pointer'           ,c_uint8,4),
+  ('pack_a'                  ,PACK_A),
+  ('device_type'             ,c_uint8,4),
+  ('data_pointer'            ,c_uint8,4),
   ('transport_type'          ,c_uint8),
 
   #block1
@@ -145,9 +158,10 @@ class TERM_STATIC(DumpableStructure):
   ('_reserved1'              ,c_uint64,10),
 
   #block2
-  ('autoload_status'           ,c_uint16,2),
-  ('validity_duration_unit'    ,c_uint16,4),
-  ('validity_duration'         ,c_uint16,10),
+  ('pack_b'                     ,PACK_B),
+ # ('autoload_status'           ,c_uint16,2),
+ # ('validity_duration_unit'    ,c_uint16,4),
+ # ('validity_duration'         ,c_uint16,10),
   ('validity_duration_last_use',c_uint64,10),
   ('min_value'                ,c_uint64,24),
   ('autoload_value'           ,c_uint64,24),
@@ -344,8 +358,11 @@ def test_available():
    print date.strftime("%d/%m/%y"),':',ret[0],[i.strftime("%d/%m/%y") for i in ret[1]]
 
 if __name__ == '__main__':
- test_available()
- #test()
+ #test_available()
+ test()
+ print sizeof(PACK_A)
+ print sizeof(TERM_DYNAMIC)
+ print sizeof(TERM_STATIC)
 
 
 
