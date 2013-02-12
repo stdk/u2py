@@ -60,14 +60,15 @@ print 'proxy_set_time',hex(proxy_set_time(reader,dt))
 print 'proxy_get_time',hex(proxy_get_time(reader,dt))
 
 def g1():
- last_event = c_uint32()
- print 'proxy_get_last_event',hex(proxy_get_last_event(reader,last_event))
- print 'last_event',last_event
+ while True:
+  last_event = c_uint32(0xFFFFFFFF)
+  print 'proxy_get_last_event',hex(proxy_get_last_event(reader,last_event))
+  print 'last_event',last_event
 
- event = DEVICE_EVENT()
- print 'proxy_get_event',hex(proxy_get_event(reader,last_event,event))
- print event
+  event = DEVICE_EVENT()
+  print 'proxy_get_event',hex(proxy_get_event(reader,last_event,event))
+  print event
  
- gevent.sleep(2)
+  gevent.sleep(2)
 
 gevent.spawn(g1).join()
