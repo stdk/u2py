@@ -19,7 +19,7 @@ class DEVICE_EVENT(DumpableStructure):
   ('EventCode',c_uint8),
   ('ErrorCode',c_uint8),
   ('DataLen',c_uint8),
-  ('EventData',ByteArray(128)),
+  ('_EventData',ByteArray(128)),
  ]
 
 print sizeof(DEVICE_EVENT)
@@ -54,10 +54,10 @@ mode = c_uint32(10)
 print 'proxy_set_mode',hex(proxy_set_mode(reader,mode))
 
 dt = DATETIME()
-print 'dt',dt
 print 'proxy_set_time',hex(proxy_set_time(reader,dt))
 
 print 'proxy_get_time',hex(proxy_get_time(reader,dt))
+print 'dt',dt
 
 def g1():
  while True:
