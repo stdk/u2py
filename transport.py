@@ -70,4 +70,4 @@ def g1():
  
  gevent.sleep(2)
 
-gevent.spawn(wait).join()
+gevent.spawn(g1).join()
