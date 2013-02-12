@@ -7,6 +7,7 @@ u2py.config.reader_path       = [
 from u2py.interface import DumpableStructure,Reader,lib,load,ByteArray
 from ctypes import c_uint8,c_uint32,POINTER as P,sizeof
 from datetime import datetime
+import gevent
 
 class DEVICE_EVENT(DumpableStructure):
  _pack_ = 1
@@ -58,9 +59,15 @@ print 'proxy_set_time',hex(proxy_set_time(reader,dt))
 
 print 'proxy_get_time',hex(proxy_get_time(reader,dt))
 
-last_event = c_uint32()
-print 'proxy_get_last_event',hex(proxy_get_last_event(reader,last_event))
+def g1():
+ last_event = c_uint32()
+ print 'proxy_get_last_event',hex(proxy_get_last_event(reader,last_event))
+ print 'last_event',last_event
 
-event = DEVICE_EVENT()
-print 'proxy_get_event',hex(proxy_get_event(reader,last_event,event))
+ event = DEVICE_EVENT()
+ print 'proxy_get_event',hex(proxy_get_event(reader,last_event,event))
+ print event
+ 
+ gevent.sleep(2)
 
+gevent.spawn(wait).join()
