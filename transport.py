@@ -6,6 +6,7 @@ u2py.config.reader_path       = [
 
 from u2py.interface import DumpableStructure,Reader,lib,load,ByteArray
 from ctypes import c_uint8,c_uint32,POINTER as P,sizeof
+from datetime import datetime
 
 class DEVICE_EVENT(DumpableStructure):
  _pack_ = 1
@@ -34,7 +35,9 @@ class DATETIME(DumpableStructure):
   ('empty',c_uint32,1),
  ]
 
-
+ def __init__(self):
+  now = datetime.now()
+  [setattr(self,attr,getattr(now,attr)) for attr,_,_ in self._fields_ if attr in dir(now)]  
 
 print sizeof(DATETIME)
 
@@ -50,6 +53,7 @@ mode = c_uint32(10)
 print 'proxy_set_mode',hex(proxy_set_mode(reader,mode))
 
 dt = DATETIME()
+print 'dt',dt
 print 'proxy_set_time',hex(proxy_set_time(reader,dt))
 
 print 'proxy_get_time',hex(proxy_get_time(reader,dt))
