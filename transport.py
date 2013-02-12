@@ -1,5 +1,8 @@
 import u2py.config
 u2py.config.lib_filename = '../u2lib/libu2.so'
+u2py.config.reader_path       = [
+    {'path': '/dev/ttyS0', 'baud': 38400, 'impl':'asio' }
+]
 
 from u2py.interface import DumpableStructure,Reader,lib,load,ByteArray
 from ctypes import c_uint8,c_uint32,POINTER as P,sizeof
