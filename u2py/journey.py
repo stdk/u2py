@@ -40,6 +40,8 @@ class CONTRACT1_DYNAMIC(DumpableStructure):
   self.validated_time = TIME()
   self.status = self.VALID_STATUS
   self._reserved[:] = self.VALID_RESERVED
+  self._mac_alg_id = self.VALID_ALG_ID
+  self._mac_key_id = self.VALID_KEY_ID
   cast(pointer(self),POINTER(ByteArray(16))).contents.crc16_calc()
 
  MAX_JOURNEYS = 50
@@ -64,6 +66,8 @@ class CONTRACT1_DYNAMIC(DumpableStructure):
  VALID_VERSION = 1
  VALID_BITMAP = 1
  VALID_STATUS = 1
+ VALID_ALG_ID = 1
+ VALID_KEY_ID = 3
 
  @classmethod
  def validate(cls,data):
@@ -72,7 +76,9 @@ class CONTRACT1_DYNAMIC(DumpableStructure):
   if contract._id != cls.VALID_ID or contract.status != cls.VALID_STATUS or\
      not contract._reserved == cls.VALID_RESERVED or\
      contract._bitmap != cls.VALID_BITMAP or \
-     contract._version != cls.VALID_VERSION: raise DataError()
+     contract._version != cls.VALID_VERSION or \
+	 contract._mac_alg_id != cls.VALID_ALG_ID or \
+	 contract._mac_key_id != cls.VALID_KEY_ID: raise DataError()
 
   return contract
 
