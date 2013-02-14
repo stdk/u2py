@@ -16,44 +16,6 @@ def fill_event_from_card(event,card):
   event.PIX = contract & 0xFFF;
 
 @Event.register
-class T_EVENT_227(Event,DumpableStructure):
- EventCode = 227
- _pack_ = 1
- _fields_ = [
-   ('EventVer',               c_uint8),
-   ('UserCardType',           c_uint16),
-   ('BitMapVer',              c_uint8),
-   ('UserCardSN',             c_uint64),
-   ('UserASPPSN',             ASPP),
-   ('AID',                    c_uint16),
-   ('PIX',                    c_uint16),
-   ('Value',                  c_uint32),#ContractValueBegin
-   ('FinalValue',             c_uint16),#ContractValueEnd
-   ('LocalTransactions',      c_uint16),#ContractTransactionNumber
- ]
- 
-@Event.register
-class T_EVENT_228(Event,DumpableStructure):
- EventCode = 228
- _pack_ = 1
- _fields_ = [
-  ('EventVer',               c_uint8),
-  ('AID',                    c_uint16),
-  ('PIX',                    c_uint16),
-  ('LocalTransactions',      c_uint32),
- ]
-
-@Event.register
-class T_EVENT_100(Event,DumpableStructure):
- EventCode = 100
- _pack_ = 1
- _fields_ = [
-  ('EventVer',               c_uint8),
-  ('AID',                    c_uint8),
-  ('PIX',                    c_uint8),
- ]
-
-@Event.register
 class EVENT_WALLET_OPERATION2(Event,DumpableStructure):
  'event 214, sizeof() = 39'
  EventCode = 214
