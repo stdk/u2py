@@ -3,9 +3,7 @@ from ctypes import *
 from mfex import *
 import config
 
-VERSION = 1,3,2
-
-lib = cdll.LoadLibrary(config.lib_filename)
+VERSION = 1,4,0
 
 P = POINTER
 BLOCK_LENGTH = 16
@@ -62,7 +60,7 @@ class Reader(c_void_p):
   '''
   Reader object can be created even if required port cannot be opened.
   It will try to fix itself afterwards.
-  To check current Reader status see 'is_open' method.
+  To check current Reader status use 'is_open' method.
   '''
   self._is_open = False
   if not path:
@@ -162,50 +160,33 @@ class Card(Structure):
  >>> sizeof(Card)
  16
  '''
- _fields_ = [('sn',SerialNumber),
-             ('type',c_uint16)]
-
- def __del__(self):
-  pass
-  #print 'Card.__del__'#,str(self)
+ _fields_ = [('sn'   ,SerialNumber),
+             ('type' ,c_uint16)]
 
  def __str__(self):
-  args = [
-    self.type,
-    self.sn,
-    getattr(self,'aspp',''),
-    getattr(self,'end_date',''),
-    getattr(self,'deposit',''),
-    [hex(i)[2:] for i in getattr(self,'contract_list','')]
-  ]
-  return '[{0}:{1}:{2}][{3}][{4}]{5}'.format(*args)
+  return '[{0}:{1}]'.format(self.type,self.sn)
  __repr__ = __str__
 
- def __init__(self,reader,scan=False):
-  #print 'Card.__init__'
+ def __del__(self):
+  pass#print self.__class__.__name__,'__del__'
+
+ def __init__(self, reader, scan = False):
+  #print self.__class__.__name__,'__init__'
   if scan and self.scan(reader): raise CardError()
   self.reader = reader
 
- def scan(self,reader):
+ def scan(self, reader):
   return card_scan(reader,self)
 
- def read_purse(self,pursedata):
-  return card_read_purse(self.reader,self.sn.SN5(),pursedata)
-
- def auth(self,sector):
+ def auth(self, sector):
   auth_ret = card_sector_auth(self.reader,self,sector)
   if auth_ret: raise SectorReadError(sector.num)
 
- def sector(self,read=True,**kw):
+ def sector(self, read = True, **kw):
   sector = Sector(self,**kw)
   self.auth(sector)
   if read: sector.read()
   return sector
-
- def contract(self):
-  'returns tuple of aid and pix from first contract in contract_list'
-  aidpix = self.contract_list[0]
-  return aidpix >> 12, aidpix & 0xFFF
 
 class Sector(DumpableStructure):
  '''
@@ -224,8 +205,7 @@ class Sector(DumpableStructure):
              ('data',ByteArray(BLOCK_LENGTH*3))]
 
  def __del__(self):
-  #print 'Sector.__del__',self.num
-  pass
+  pass#print self.__class__.__name__,'__del__',self.num
 
  def __init__(self, card, num = 0, key = 0, enc = None,
               mode = None, method = None, blocks = (0,1,2)):
@@ -256,10 +236,7 @@ class Sector(DumpableStructure):
   self.set_mode(mode)
 
   if not method: method = 'by-blocks'
-  self.read,self.write = {
-    'full' : (self.read_sector,self.write_sector),
-    'by-blocks' : (self.read_by_blocks, self.write_by_blocks)
-  }[method]
+  self.__class__ = { 'full' : FullSector, 'by-blocks' : ByBlockSector}[method]
 
   self.blocks = blocks
 
@@ -268,23 +245,6 @@ class Sector(DumpableStructure):
 
  def set_mode(self,mode):
   self.mode = {'static': 0, 'dynamic' : 1}[mode]
-
- def read_sector(self):
-  if card_sector_read(self.card.reader,self,self.enc): raise SectorReadError(self.num)
-
- def write_sector(self,blocks = None):
-  if blocks: return [self.write_block(block,self.enc) for block in blocks]
-  if card_sector_write(self.card.reader,self,self.enc): raise SectorWriteError(self.num)
-
- def read_by_blocks(self,blocks = None):
-  if not blocks: blocks = self.blocks
-  for b in blocks:
-   if card_block_read(self.card.reader,self,b,self.enc[b]): raise SectorReadError(self.num,b)
-
- def write_by_blocks(self,blocks = None):
-  if not blocks: blocks = self.blocks
-  for b in blocks:
-   if card_block_write(self.card.reader,self,b,self.enc[b]): raise SectorWriteError(self.num,b)
 
  def write_block(self,i,enc = None):
   if not enc: enc = self.enc[i]
@@ -299,6 +259,27 @@ class Sector(DumpableStructure):
   else:
    if card_sector_set_trailer(self.card.reader,self): raise SectorWriteError(self.num,3)
 
+class FullSector(Sector):
+ def read(self):
+  if card_sector_read(self.card.reader,self,self.enc): raise SectorReadError(self.num)
+
+ def write(self,blocks = None):
+  if blocks: return [self.write_block(block,self.enc) for block in blocks]
+  if card_sector_write(self.card.reader,self,self.enc): raise SectorWriteError(self.num)
+
+class ByBlockSector(Sector):
+ def read(self,blocks = None):
+  if not blocks: blocks = self.blocks
+  for b in blocks:
+   if card_block_read(self.card.reader,self,b,self.enc[b]): raise SectorReadError(self.num,b)
+
+ def write(self,blocks = None):
+  if not blocks: blocks = self.blocks
+  for b in blocks:
+   if card_block_write(self.card.reader,self,b,self.enc[b]): raise SectorWriteError(self.num,b)
+
+#library functions
+lib = cdll.LoadLibrary(config.lib_filename)
 crc16_check             = load(lib,'crc16_check'               ,(c_void_p,c_uint32,c_uint8,))
 crc16_calc              = load(lib,'crc16_calc'                ,(c_void_p,c_uint32,c_uint8,))
 
@@ -318,24 +299,6 @@ card_sector_read        = load(lib,'card_sector_read'          ,(Reader,P(Sector
 card_sector_write       = load(lib,'card_sector_write'         ,(Reader,P(Sector),c_uint8,))
 card_sector_set_trailer = load(lib,'card_sector_set_trailer'   ,(Reader,P(Sector)))
 card_sector_set_trailer_dynamic = load(lib,'card_sector_set_trailer_dynamic'   ,(Reader,P(Sector),P(Card)))
-
-#service functions
-
-#workaround for wrong ctypes behaviour when writing bit fields
-term_set_validity       = load(lib,'term_set_validity'         ,(c_void_p,c_uint16,c_uint16))
-#initializes time contract based on given parameters (see u2.dll source)
-term_init               = load(lib,'term_init'                 ,(c_void_p,c_void_p))
-
-class PURSEDATA(DumpableStructure):
- _pack_ = 1
- _fields_ = [('version'     ,c_uint8),
-             ('end'         ,DATE),
-             ('status'      ,c_uint8),
-             ('value'       ,c_uint32),
-             ('start'       ,DATE),
-             ('transactions',c_uint16)]
-
-card_read_purse          = load(lib,'card_read_purse'           ,(Reader,P(SN5),P(PURSEDATA),))
 
 def random_data(size,a=0,b=0xFF):
  from random import randint

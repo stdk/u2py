@@ -1,6 +1,6 @@
-from interface import DumpableStructure,DumpableBigEndianStructure,ByteArray,Reader,DATE
+from interface import Card,DumpableStructure,DumpableBigEndianStructure,ByteArray,DATE
 from mfex import *
-from ctypes import *
+from ctypes import c_uint64,c_uint32,c_uint16,c_uint8,POINTER as P,pointer as p,Structure,cast
 from events import EVENT_CONTRACT_ZALOG
 from stoplist import Stoplist
 
@@ -23,7 +23,7 @@ class EMIT_SECTOR_DATA(DumpableBigEndianStructure):
              ('pay_unit'             ,c_uint64,16), # =0x9000
              ('deposit_pay_unit'     ,c_uint64,14), # =0x800
 
-             # 2 4-byte blocks
+             # two 4-byte blocks
              # note: it's important to use 4-byte base fields for bit fields
              # since ctypes cannot correctly set those bitfields inside 8-byte
              # fields.
@@ -42,7 +42,7 @@ class EMIT_SECTOR_DATA(DumpableBigEndianStructure):
  EXPIRED_MESSAGE = 'Transport card validity has been expired'
 
  def update_checksum(self):
-  cast(pointer(self),POINTER(ByteArray(48))).contents.crc16_calc(low_endian=0)
+  cast(p(self),P(ByteArray(48))).contents.crc16_calc(low_endian=0)
 
  @classmethod
  def validate(cls,data):
@@ -75,22 +75,24 @@ class AIDPIX(Structure):
   return '%02X%02X%02X' % (self.a,self.b,self.c)
  __repr__ = __str__
 
-class DIRTK(Structure):
+class DIRTK(DumpableStructure):
  _pack_ = 1
  _fields_ = [('contracts',AIDPIX*15)]
 
  VALID_CONTRACTS = set([0xd010ff,0xd01100])
+ MASK = 0xF00
+ TERM = 0x300
+
+ @classmethod
+ def is_valid_contract(cls,aidpix):
+  return aidpix in cls.VALID_CONTRACTS or (aidpix & cls.MASK) == cls.TERM
 
  def contract_list(self):
   all_contracts = [contract.value() for contract in self.contracts]
-  is_valid_contract = lambda value: value in self.VALID_CONTRACTS or (value & 0xF00) == 0x300
-  return filter(is_valid_contract,all_contracts)
-
- def __str__(self):
-  return ','.join([str(contract) for contract in self.contracts])
+  return filter(self.is_valid_contract,all_contracts)
 
  def update_checksum(self):
-  cast(pointer(self),POINTER(ByteArray(48))).contents.crc16_calc(low_endian=0)
+  cast(p(self),P(ByteArray(48))).contents.crc16_calc(low_endian=0)
 
  @classmethod
  def validate(cls,data):
@@ -121,26 +123,46 @@ def register_contract(card,sector_num,aid,pix):
  dirtk_sector.write()
  card.contract_list += [aidpix.value()]
 
-def validate(card):
-  emit_sector = card.sector(num=1,key=2,method='full')
+class TransportCard(Card):
+ def contract(self):
+  'returns tuple of aid and pix from first contract in contract_list'
+  aidpix = self.contract_list[0]
+  return aidpix >> 12, aidpix & 0xFFF
+
+ def __str__(self):
+  args = [
+    self.type,
+    self.sn,
+    getattr(self,'aspp',''),
+    getattr(self,'end_date',''),
+    getattr(self,'deposit',''),
+    [hex(i)[2:] for i in getattr(self,'contract_list','')]
+  ]
+  return '[{0}:{1}:{2}][{3}][{4}]{5}'.format(*args)
+
+ def validate(self):
+  emit_sector = self.sector(num=1,key=2,method='full')
   emit_data = EMIT_SECTOR_DATA.validate(emit_sector.data)
 
   if emit_data.aspp in Stoplist(): raise StoplistError()
 
-  dirtk_sector = card.sector(num=2,key=3,method='full')
+  dirtk_sector = self.sector(num=2,key=3,method='full')
   dirtk = DIRTK.validate(dirtk_sector.data)
 
-  card.aspp = emit_data.aspp.copy()
-  card.contract_list = dirtk.contract_list()
-  card.deposit = emit_data.deposit
-  card.end_date = DATE(uint16 = emit_data.end_date)
+  self.aspp = emit_data.aspp.copy()
+  self.contract_list = dirtk.contract_list()
+  self.deposit = emit_data.deposit
+  self.end_date = DATE(uint16 = emit_data.end_date)
+
+def validate(card):
+ card.__class__ = TransportCard
+ card.validate()
 
 if __name__ == "__main__":
- import transport_card
+ from interface import Reader,Sector
+
  card = Reader().scan()
-
- validate(card=card)
-
+ validate(card)
  print card
 
  #set_deposit(card,700)

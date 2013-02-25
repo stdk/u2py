@@ -74,13 +74,14 @@ class DATE(Structure):
     ('_'    ,c_uint16,2)
  ]
 
- def __init__(self,uint16 = None,date = None):
+ def __init__(self,uint16 = None,date = None,**kw):
   if uint16 != None:
    value = c_uint16(uint16)
    memmove(addressof(self),addressof(value),sizeof(self))
   else:
    moment = datetime.now() if not date else date
    self.year,self.month,self.day = moment.year - 2000,moment.month,moment.day
+  [setattr(self,key,value) for key,value in kw.iteritems()]
 
  def to_int(self):
   integer = c_uint16()
@@ -105,13 +106,14 @@ class TIME(Structure):
     ('second'  ,c_uint16,5) # seconds are stored divided by 2 due to lack of space
  ]
 
- def __init__(self,uint16 = None,time = None):
+ def __init__(self,uint16 = None,time = None,**kw):
   if uint16 != None:
    value = c_uint16(uint16)
    memmove(addressof(self),addressof(value),sizeof(self))
   else:
    moment = datetime.now() if not time else time
    self.hour,self.minute,self.second = moment.hour,moment.minute,moment.second/2
+  [setattr(self,key,value) for key,value in kw.iteritems()]
 
  def to_int(self):
   integer = c_uint16()

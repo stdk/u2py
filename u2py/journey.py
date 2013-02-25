@@ -86,12 +86,14 @@ class CONTRACT1_DYNAMIC(DumpableStructure):
   return cmp(self.transaction,other.transaction)
 
 def analyze_dynamic_str_data(str_data):
+ '''
+ >>> analyze_dynamic_str_data("99 43 6E 68 21 02 61 79 82 A1 6C 87 BC 0F E2 F9")
+ {'validated_time': 00:00:00, 'status': 0, 'transaction': 26734, 'validated_date': 00/00/00, 'journeys': 545}
+ '''
  x = [int(i,16) for i in str_data.split()]
  d = ByteArray(16)()
  [d.data.__setitem__(i,v) for i,v in enumerate(x)]
  return d.cast(CONTRACT1_DYNAMIC)
-
-#print analyze_dynamic_str_data("99 43 6E 68 21 02 61 79 82 A1 6C 87 BC 0F E2 F9")
 
 class CONTRACT1_STATIC(DumpableStructure):
  _fields_ = [('data',ByteArray(16))]
@@ -105,8 +107,9 @@ class CONTRACT1_STATIC(DumpableStructure):
   return data.cast(cls)
 
 def init(card):
- from transport_card import register_contract,set_deposit
+ from transport_card import validate,set_deposit,register_contract
 
+ validate(card)
  set_deposit(card)
 
  jsector = CONTRACT_A(CONTRACT1_STATIC,CONTRACT1_DYNAMIC)
@@ -126,7 +129,7 @@ def init(card):
 def read(card):
  sector = card.sector(num=SECTOR,key=KEY,enc=ENCRYPTION)
  contract = CONTRACT_A.validate(sector,CONTRACT1_STATIC,CONTRACT1_DYNAMIC)
- return contract.dynamic
+ return contract.dynamic.to_dict()
 
 def refill(card,amount):
  '''
@@ -160,18 +163,21 @@ def refill(card,amount):
  return amount_used
 
 def test():
+ import doctest
+ doctest.testmod()
+
  from interface import Reader
  import transport_card
 
  card = Reader().scan()
 
- transport_card.validate(card=card)
+ #transport_card.validate(card=card)
 
  #init(card)
 
  #print refill(card,100)
 
- #print read(card)
+ print read(card)
 
 if __name__ == "__main__":
  test()

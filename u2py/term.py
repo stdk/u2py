@@ -1,14 +1,19 @@
-from interface_basis import DumpableStructure,DATE,TIME
-from interface import term_set_validity,term_init,ByteArray
-from ctypes import c_uint64,c_uint32,c_uint16,c_uint8,sizeof,pointer as p,POINTER as P,cast
+from interface import lib,load,DumpableStructure,DATE,TIME
 from contract import DYNAMIC_A
-from datetime import datetime,timedelta
-from calendar import monthrange
 from events import EVENT_CONTRACT_ADD2,EVENT_CONTRACT
-from mfex import *
 from config import term_full_cost,term_half_cost,hall_id
 import purse
+
+from ctypes import c_void_p,c_uint64,c_uint32,c_uint16,c_uint8,sizeof,pointer as p,POINTER as P,cast
+from datetime import datetime,timedelta
+from calendar import monthrange
 from time import clock
+from mfex import *
+
+#workaround for wrong ctypes behaviour when writing bit fields
+term_set_validity       = load(lib,'term_set_validity'         ,(c_void_p,c_uint16,c_uint16))
+#initializes time contract based on given parameters (see u2.dll source)
+term_init               = load(lib,'term_init'                 ,(c_void_p,c_void_p))
 
 FULL_COST = term_full_cost
 HALF_COST = term_half_cost
@@ -288,11 +293,8 @@ def refill(card,amount):
   card.auth(static_sector)
   static_sector.data.crc16_calc(low_endian = 1)
   static_sector.write()
- except Exception as e:
-  [event.set_error_code(e) for event in events]
-  raise
- finally:
-  [event.save(card) for event in events]
+ except Exception as e: [event.set_error_code(e) for event in events]; raise
+ finally: [event.save(card) for event in events]
 
  return cost
 
@@ -345,7 +347,7 @@ def test_available():
  import transport_card
 
  card = Reader().scan()
- transport_card.validate(card = card)
+ transport_card.validate(card)
  sector,static = read_static(card)
 
  now = datetime.now()
@@ -358,11 +360,8 @@ def test_available():
    print date.strftime("%d/%m/%y"),':',ret[0],[i.strftime("%d/%m/%y") for i in ret[1]]
 
 if __name__ == '__main__':
- #test_available()
+ test_available()
  test()
- print sizeof(PACK_A)
- print sizeof(TERM_DYNAMIC)
- print sizeof(TERM_STATIC)
 
 
 

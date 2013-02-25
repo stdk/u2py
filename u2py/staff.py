@@ -19,23 +19,13 @@ class STAFF_VALIDATION_INFO(BigEndianStructure):
  ]
 
  def expired(self):
-  return date.today() > date(2000 + self.end_year,self.end_month,self.end_year)
+  return self.end().expired()
 
- def __str__(self):
-  args = ( self.begin_day,self.begin_month,self.begin_year,
-           self.end_day,self.end_month,self.end_year)
-  return '%02i/%02i/%02i - %02i/%02i/%02i' % args
+ def begin(self):
+  return DATE(year = self.begin_year,month = self.begin_month, day = self.begin_day)
 
-class DOUBLE_USE(DumpableBigEndianStructure):
- _pack_ = 1
- _fields_ = [
-    ('duration',c_uint16,10),
-    ('unit',c_uint16,4),
-    #('_',c_uint16,2),
- ]
-
- #def to_dict(self):
- # return { 'unit' : { 1: 'minute' }.get(self.unit,None), 'duration'  }
+ def end(self):
+  return DATE(year = self.end_year,month = self.end_month, day = self.end_day)
 
 class CONTRACT0_STATIC(DumpableStructure):
  _pack_ = 1
@@ -46,8 +36,7 @@ class CONTRACT0_STATIC(DumpableStructure):
     ('aidpix',AIDPIX),
     ('status',c_uint8),
     ('date',STAFF_VALIDATION_INFO),
-    ('double_use',DOUBLE_USE),
-    #('double_use',c_uint16),
+    ('double_use',c_uint16),
     ('user_status',c_uint8)
  ]
 
@@ -55,6 +44,14 @@ class CONTRACT0_STATIC(DumpableStructure):
  VALID_VERSION = 0
  VALID_BITMAP = 0
  VALID_AIDPIX = 0xD010FF
+
+ def to_dict(self,deep = False):
+  return {
+   'status'              : self.status,
+   'user_status'         : self.user_status,
+   'validity_begin_date' : self.date.begin(),
+   'validity_end_date'   : self.date.end()
+  }
 
  @classmethod
  def validate(cls,data):
@@ -114,7 +111,7 @@ class PROPRIETOR_ASPP_SECTOR1_DATA(DumpableBigEndianStructure):
     ('fio',             c_char*26)
  ]
 
- def to_dict(self):
+ def to_dict(self,deep = False):
   return { 'fio': self.format_fio() }
 
  def format_fio(self):
