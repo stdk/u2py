@@ -83,6 +83,9 @@ class DATE(Structure):
    self.year,self.month,self.day = moment.year - 2000,moment.month,moment.day
   [setattr(self,key,value) for key,value in kw.iteritems()]
 
+ def __eq__(self,o):
+  return self.to_int() == o.to_int()
+
  def to_int(self):
   integer = c_uint16()
   memmove(addressof(integer),addressof(self),sizeof(integer))
@@ -114,6 +117,9 @@ class TIME(Structure):
    moment = datetime.now() if not time else time
    self.hour,self.minute,self.second = moment.hour,moment.minute,moment.second/2
   [setattr(self,key,value) for key,value in kw.iteritems()]
+
+ def __eq__(self,o):
+  return self.to_int() == o.to_int()
 
  def to_int(self):
   integer = c_uint16()

@@ -16,6 +16,9 @@ def ByteArray(length,crc_LE = 1,cache = {}):
  class ByteArrayTemplate(Structure):
   _fields_ = [('data',c_uint8 * length)]
 
+  def __init__(self,*args):
+   [self.data.__setitem__(i,value) for i,value in enumerate(args)]
+
   def __getitem__(self,index):
    return self.data[index]
 
@@ -25,6 +28,9 @@ def ByteArray(length,crc_LE = 1,cache = {}):
   def __str__(self):
    return ' '.join( '%02x' % i for i in self.data )
   __repr__ = __str__
+
+  def __len__(self):
+   return len(self.data)
 
   def __eq__(self,r):
    return self.data[:] == r[:]
@@ -56,7 +62,7 @@ def ByteArray(length,crc_LE = 1,cache = {}):
  return ByteArrayTemplate
 
 class Reader(c_void_p):
- def __init__(self,path = None,baud = None,impl='blockwise'):
+ def __init__(self,path = None,baud = None,impl = None):
   '''
   Reader object can be created even if required port cannot be opened.
   It will try to fix itself afterwards.
@@ -65,7 +71,7 @@ class Reader(c_void_p):
   self._is_open = False
   if not path:
     kw = config.reader_path[0]
-    path,baud,impl = kw['path'],kw['baud'],kw.get('impl','blockwise')
+    path,baud,impl = kw['path'],kw['baud'],kw.get('impl','asio')
   self.path = path
   self.baud = baud
   self.impl = impl
@@ -326,6 +332,6 @@ if __name__ == '__main__':
  import doctest
  doctest.testmod()
 
- reader = Reader()
+ reader = Reader(impl='file')
  print reader.sn()
  print reader.version()

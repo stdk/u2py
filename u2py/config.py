@@ -19,7 +19,7 @@ logging.config.dictConfig({
 })
 
 reader_path       = [
-    {'path': '\\\\.\\COM2', 'baud': 38400 }
+    {'path': '\\\\.\\COM2', 'baud': 38400, 'impl':'blockwise' }
 ]
 lib_filename      = '../u2.dll'
 db_filename       = 'db.db3'

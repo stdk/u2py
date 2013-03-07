@@ -14,6 +14,11 @@ AID = 0xD01
 PIX = 0x100
 
 class CONTRACT1_DYNAMIC(DumpableStructure):
+ '''
+ >>> data = h2b("99 41 03 00 05 00 4d 32 f1 dc 01 ef bc 0d c3 f1")
+ >>> CONTRACT1_DYNAMIC.validate(data)
+ {'validated_time': 17:39:54, 'status': 1, 'transaction': 3, 'validated_date': 25/02/13, 'journeys': 5}
+ '''
  _pack_ = 1
  _fields_ = [
     ('_id',              c_uint8),
@@ -48,6 +53,21 @@ class CONTRACT1_DYNAMIC(DumpableStructure):
  JOURNEY_COST = 200
 
  def refill(self,amount):
+  '''
+  >>> data = h2b("99 41 03 00 05 00 4d 32 f1 dc 01 ef bc 0d c3 f1")
+  >>> dynamic = CONTRACT1_DYNAMIC.validate(data)
+  >>> dynamic
+  {'validated_time': 17:39:54, 'status': 1, 'transaction': 3, 'validated_date': 25/02/13, 'journeys': 5}
+  >>> dynamic.refill(0)
+  0
+  >>> dynamic.refill(500)
+  400
+  >>> dynamic.validated_date == DATE(),dynamic.validated_time == TIME()
+  (True, True)
+  >>> dynamic.journeys == 7, dynamic.transaction == 4
+  (True, True)
+  >>>
+  '''
   if amount <= 0: return 0
 
   value = amount/self.JOURNEY_COST
@@ -85,15 +105,16 @@ class CONTRACT1_DYNAMIC(DumpableStructure):
  def __cmp__(self,other):
   return cmp(self.transaction,other.transaction)
 
-def analyze_dynamic_str_data(str_data):
+def h2b(s):
  '''
- >>> analyze_dynamic_str_data("99 43 6E 68 21 02 61 79 82 A1 6C 87 BC 0F E2 F9")
- {'validated_time': 00:00:00, 'status': 0, 'transaction': 26734, 'validated_date': 00/00/00, 'journeys': 545}
+ Accepts space-separated string of hexadecimal byte values and return ByteArray
+ with those bytes.
+ >>> ret = h2b("99 41 03 00 05 00 4d 32 f1 dc 01 ef bc 0d c3 f1")
+ >>> [i for i in ret]
+ [153, 65, 3, 0, 5, 0, 77, 50, 241, 220, 1, 239, 188, 13, 195, 241]
  '''
- x = [int(i,16) for i in str_data.split()]
- d = ByteArray(16)()
- [d.data.__setitem__(i,v) for i,v in enumerate(x)]
- return d.cast(CONTRACT1_DYNAMIC)
+ bytes = [int(i,16) for i in s.split()]
+ return ByteArray(len(bytes))(*bytes)
 
 class CONTRACT1_STATIC(DumpableStructure):
  _fields_ = [('data',ByteArray(16))]
