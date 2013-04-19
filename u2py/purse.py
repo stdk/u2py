@@ -1,20 +1,30 @@
 from ctypes import c_uint8,c_uint16,c_uint32,c_uint64,BigEndianStructure,sizeof
 from interface import DumpableStructure,DumpableBigEndianStructure,ByteArray,Reader
+from interface_basis import DATE
+from datetime import datetime,timedelta
 from mfex import *
 from contract import CONTRACT_A
 from events import EVENT_WALLET_OPERATION2
 
+SECTOR = 10
+KEY    = 5
+
 class PURSE_DYNAMIC_DATA(DumpableBigEndianStructure):
  _pack_ = 1
- _fields_ = [('transaction',c_uint16),
-             ('value',c_uint32,24),
-             ('status',c_uint32,8),
-             ('al_status',c_uint8),
-             ('reserved',c_uint8*6),
-             ('mac_alg_id',c_uint8,2),
-             ('mac_key_id',c_uint8,6),
-             ('mac_auth',c_uint16)]
+ _fields_ = [
+    ('transaction',c_uint16),
+    ('value',c_uint32,24),
+    ('status',c_uint32,8),
+    ('al_status',c_uint8),
+    ('reserved',c_uint8*6),
+    ('mac_alg_id',c_uint8,2),
+    ('mac_key_id',c_uint8,6),
+    ('mac_auth',c_uint16)
+ ]
 
+ def __init__(self):
+  self.status = 1
+  ByteArray(self).crc16_calc(low_endian=0)
 
  @classmethod
  def validate(cls,data):
@@ -39,6 +49,17 @@ class PURSE_DATE(BigEndianStructure):
              ('end_month',c_uint32,4),
              ('end_year',c_uint32,5),
              ('reserve',c_uint32,4),]
+
+ def __init__(self):
+  begin = DATE()
+  self.begin_day = begin.day
+  self.begin_month = begin.month
+  self.begin_year = begin.year
+
+  end = DATE(date = datetime.now() + timedelta(days=365,hours=6) * 5) # + 5 years from now
+  self.end_day = end.day
+  self.end_month = end.month
+  self.end_year = end.year
 
  @classmethod
  def from_int(value):
@@ -66,15 +87,23 @@ class PURSE_STATIC_DATA(DumpableStructure):
              ('mac_key_id',c_uint32,6),
              ('mac_auth',c_uint16)]
 
+ VALID_ID = 0x85
+
+ def __init__(self):
+  self.identifier = self.VALID_ID
+  self.version = 1
+  self.date = PURSE_DATE()
+  ByteArray(self).crc16_calc(low_endian=0)
+
  @classmethod
  def validate(cls,data):
   if not data.crc16_check(low_endian=0): raise CRCError()
   contract = data.cast(cls)
-  if contract.identifier != 0x85: raise DataError()
+  if contract.identifier != cls.VALID_ID: raise DataError()
   return contract
 
 def get_value(card):
- purse_sector = card.sector(num=10,key=5,method='full')
+ purse_sector = card.sector(num=SECTOR,key=KEY,method='full')
  contract = CONTRACT_A.validate(purse_sector,PURSE_STATIC_DATA,PURSE_DYNAMIC_DATA)
  return contract.dynamic.value
 
@@ -102,16 +131,27 @@ def change_value(card,value):
  finally:
   if event.Amount: event.save(card)
 
+def init(card):
+ purse = CONTRACT_A(PURSE_STATIC_DATA,PURSE_DYNAMIC_DATA)
+ sector = card.sector(num=SECTOR,key=0,method='full',read=False)
+ sector.data = ByteArray(purse)
+
+ contract = CONTRACT_A.validate(sector,PURSE_STATIC_DATA,PURSE_DYNAMIC_DATA)
+ print contract.static
+ print contract.dynamic
+
 if __name__ == "__main__":
  import transport_card
- card = Reader('\\\\.\\COM2').scan()
+ card = Reader().scan()
 
- transport_card.validate(card=card)
+ print init(card)
 
- get_value(card)
+ #transport_card.validate(card=card)
 
- print card
+ #get_value(card)
 
- print change_value(card=card,value=-100)
+ #print card
+
+ #print change_value(card=card,value=-100)
 
  #print card.contract_list
