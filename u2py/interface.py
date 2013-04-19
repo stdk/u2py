@@ -11,7 +11,16 @@ BLOCK_LENGTH = 16
 STANDARD   = 0x4
 ULTRALIGHT = 0x44
 
-def ByteArray(length,crc_LE = 1,cache = {}):
+def ByteArray(obj,crc_LE = 1,cache = {},copy = False):
+ if not isinstance(obj,int):
+  obj_bytearray = cast(byref(obj),POINTER(ByteArray(sizeof(obj)))).contents
+  if copy:
+   ret = ByteArray(sizeof(obj))()
+   obj_bytearray.copy(ret)
+   return ret
+  return obj_bytearray
+
+ length = obj
  if (length,crc_LE) in cache: return cache[length,crc_LE]
  class ByteArrayTemplate(Structure):
   _fields_ = [('data',c_uint8 * length)]
@@ -184,6 +193,9 @@ class Card(Structure):
  def scan(self, reader):
   return card_scan(reader,self)
 
+ def reset(self):
+  if card_reset(self.reader,self): raise CardError()
+
  def auth(self, sector):
   auth_ret = card_sector_auth(self.reader,self,sector)
   if auth_ret: raise SectorReadError(sector.num)
@@ -298,6 +310,7 @@ reader_get_sn           = load(lib,'reader_get_sn'             ,(Reader,P(ByteAr
 reader_get_version      = load(lib,'reader_get_version'        ,(Reader,P(ByteArray(7))))
 
 card_scan               = load(lib,'card_scan'                 ,(Reader,P(Card),))
+card_reset              = load(lib,'card_reset'                ,(Reader,P(Card),))
 card_sector_auth        = load(lib,'card_sector_auth'          ,(Reader,P(Card),P(Sector),))
 card_block_read         = load(lib,'card_block_read'           ,(Reader,P(Sector),c_uint8,c_uint8,))
 card_block_write        = load(lib,'card_block_write'          ,(Reader,P(Sector),c_uint8,c_uint8,))
