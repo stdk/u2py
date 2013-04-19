@@ -7,7 +7,7 @@ webapi.config.write_api_requires_server = False
 
 import u2py.config
 u2py.config.reader_path       = [
-    {'path': '\\\\.\\COM2', 'baud': 38400, 'impl':'blockwise' }
+    {'path': '\\\\.\\COM2', 'baud': 38400, 'impl':'asio' }
 ]
 u2py.config.rewriter_ui_path = 'u2py/rewriter.ui'
 u2py.config.lib_filename    = './u2.dll'
