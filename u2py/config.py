@@ -19,7 +19,7 @@ logging.config.dictConfig({
 })
 
 reader_path       = [
-    {'path': '\\\\.\\COM2', 'baud': 38400, 'impl':'blockwise' }
+    {'path': '\\\\.\\COM2', 'baud': 38400, 'impl':'asio' }
 ]
 lib_filename      = '../u2.dll'
 db_filename       = 'db.db3'
@@ -40,5 +40,5 @@ device_type       = 2
 password          = '123456'
 
 cash_card_sn      = 0
-cash_card_aspp    = '0000 0000 0000 0000'
+cash_card_aspp    = '0000000000000000'
 
