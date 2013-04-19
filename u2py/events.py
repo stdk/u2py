@@ -119,6 +119,24 @@ class EVENT_CONTRACT_ZALOG(Event,DumpableStructure):
   Event.__init__(self,**kw)
   if card: fill_event_from_card(self,card)
 
+@Event.register
+class EVENT_ENCASHMENT(Event,DumpableStructure):
+ EventCode = 231
+ _pack_ = 1
+ _fields_ = [
+    ('EventVer',            c_uint8),
+    ('CashCardSN',          c_uint32),
+    ('CashASPPSN',          ASPP),
+    ('Amount',              c_uint32),
+    ('Value',               c_uint32) # TagAmount
+ ]
+
+ def __init__(self,**kw):
+  Event.__init__(self,**kw)
+  self.EventVer = 2
+  self.CashCardSN = config.cash_card_sn
+  self.CashASPPSN = ASPP.convert(config.cash_card_aspp)
+
 if __name__ == '__main__':
  import config
  config.cash_card_sn = 100
