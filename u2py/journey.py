@@ -127,11 +127,11 @@ class CONTRACT1_STATIC(DumpableStructure):
   if data[0] != 0x87: raise DataError()
   return data.cast(cls)
 
-def init(card):
+def init(card,deposit):
  from transport_card import validate,set_deposit,register_contract
 
  validate(card)
- set_deposit(card)
+ set_deposit(card,deposit)
 
  jsector = CONTRACT_A(CONTRACT1_STATIC,CONTRACT1_DYNAMIC)
  sector = card.sector(num=SECTOR,key=0,enc=ENCRYPTION,read=False)
@@ -146,6 +146,14 @@ def init(card):
   register_contract(card,SECTOR,AID,PIX)
  except Exception as e: event.set_error_code(e); raise
  finally: event.save(card)
+
+def remove(card):
+ from transport_card import validate,set_deposit,clear,register_contract
+
+ validate(card)
+ clear(card,sectors = [(SECTOR,KEY,'static')])
+ register_contract(card,SECTOR,0,0)
+ set_deposit(card,0)
 
 def read(card):
  sector = card.sector(num=SECTOR,key=KEY,enc=ENCRYPTION)

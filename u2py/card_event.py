@@ -2,10 +2,14 @@ from interface_basis import DumpableStructure,DumpableBigEndianStructure,DATE,TI
 from interface import ByteArray
 from ctypes import c_uint8,c_uint16,c_uint32,c_uint64,pointer,POINTER,cast,sizeof
 from config import db_filename,hall_id,hall_device_id,device_type
+from contract import DYNAMIC_A
 
-EVENT_SECTOR = 3
-EVENT_SECTOR_KEY = 7
+SECTOR = 3
+KEY    = 7
 EVENTS_PER_SECTOR = 3
+
+APP_SECTOR = 5
+APP_KEY    = 6
 
 class AppStatus(DumpableBigEndianStructure):
  _pack_ = 1
@@ -20,11 +24,23 @@ class AppStatus(DumpableBigEndianStructure):
     ('_d',            ByteArray(7)),
  ]
 
-class AppSectorData(DumpableStructure):
- _pack_ = 1
- _fields_ = [
-    ('status',        AppStatus*2)
- ]
+ VALID_ID = 0x84
+ VALID_VERSION = 1
+
+ @classmethod
+ def validate(cls,data):
+  status = data.cast(cls)
+  if status.id != cls.VALID_ID or \
+     status.version != cls.VALID_VERSION: raise DataError(APP_SECTOR)
+  return status
+
+ def __init__(self):
+  self.id = self.VALID_ID
+  self.version = self.VALID_VERSION
+  self.update_checksum()
+
+ def update_checksum(self):
+  ByteArray(self).crc16_calc()
 
 class CardEvent(DumpableStructure):
  'fits into one block = 16 bytes'
@@ -68,8 +84,8 @@ class CardEvent(DumpableStructure):
   return self.checksum() == self._checksum
 
  def next_record(self,card):
-  app_sector = card.sector(num=5, key=6, blocks=(0,))
-  app_status = AppSectorData.validate(app_sector.data).status[0]
+  app_sector = card.sector(num=APP_SECTOR, key=APP_KEY, blocks=(0,))
+  app_status = AppStatus.validate(app_sector.data)
   app_status.record = (app_status.record + 1) % 6
   app_sector.write_block(0)
   return app_status.record
@@ -77,8 +93,8 @@ class CardEvent(DumpableStructure):
  def save(self,card):
   next_record = self.next_record(card)
 
-  event_sector_num = EVENT_SECTOR + (next_record / EVENTS_PER_SECTOR)
-  event_sector = card.sector(num = event_sector_num, key = EVENT_SECTOR_KEY, blocks=())
+  event_sector_num = SECTOR + (next_record / EVENTS_PER_SECTOR)
+  event_sector = card.sector(num = event_sector_num, key = KEY, read = False)
 
   event_list = EventList.validate(event_sector.data)
   event_block_num = next_record % EVENTS_PER_SECTOR
@@ -92,11 +108,23 @@ class EventList(DumpableStructure):
  ]
 
 def read(card):
- event_sector1 = card.sector(num = EVENT_SECTOR    ,key = EVENT_SECTOR_KEY)
- event_sector2 = card.sector(num = EVENT_SECTOR + 1,key = EVENT_SECTOR_KEY)
+ event_sector1 = card.sector(num = SECTOR    ,key = KEY, method = 'full')
+ event_sector2 = card.sector(num = SECTOR + 1,key = KEY, method = 'full')
 
  return EventList.validate(event_sector1.data).events[:] + \
         EventList.validate(event_sector2.data).events[:]
+
+def init(card):
+ def init_event_sector(num):
+  sector = card.sector(num = num,key = 0, method = 'full', read = False)
+  sector.write()
+  sector.set_trailer(KEY)
+ [init_event_sector(n) for n in (SECTOR,SECTOR+1)]
+
+ sector = card.sector(num = APP_SECTOR,key = 0, method = 'full', read = False)
+ sector.data.cast(DYNAMIC_A).__init__(AppStatus)
+ sector.write()
+ sector.set_trailer(APP_KEY)
 
 if __name__ == '__main__':
  from interface import Reader

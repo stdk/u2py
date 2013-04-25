@@ -64,7 +64,7 @@ class EMIT_SECTOR_DATA(DumpableBigEndianStructure):
  SECTOR = 1
  EXPIRED_MESSAGE = 'Transport card validity has been expired'
 
- def __init__(self, aspp = None, deposit = DEPOSIT_VALUE):
+ def __init__(self, aspp):
   self.version = 1
   self.provider[:] = self.EDRPOU_KIEV_METRO
 
@@ -75,11 +75,13 @@ class EMIT_SECTOR_DATA(DumpableBigEndianStructure):
   self.end_date = DATE(date = limit).to_int()
 
   self.status = 1
-  self.deposit = deposit
-  self.dirtk_pointer = 2
+  self.dirtk_pointer = DIRTK_SECTOR
   self.personal_pointer = 6
   self.event_log_version = 0
 
+  self.update_checksum()
+
+ def update_checksum(self):
   ByteArray(self).crc16_calc(low_endian=0)
 
  @classmethod
@@ -143,15 +145,27 @@ class DIRTK(DumpableStructure):
   #if not data.crc16_check(low_endian=0): raise CRCError(2)
   return data.cast(cls)
 
-def set_deposit(card,value = DEPOSIT_VALUE):
+class DepositError(Exception):
+ def __init__(self,message):
+  super(DepositError,self).__init__(message)
+
+def set_deposit(card,value = None):
+ if value == None: value = DEPOSIT_VALUE
  emit_sector = card.sector(num=1,key=2,method='full')
  emit_data = EMIT_SECTOR_DATA.validate(emit_sector.data)
+
  if emit_data.deposit == value: return
 
- emit_data.deposit = value
+ if value > 0 and emit_data.deposit > 0:
+  raise DepositError('Deposit for this transport card already exists.')
+
+ if value == 0 and emit_data.deposit != 0:
+  value = -emit_data.deposit
+
+ emit_data.deposit += value
  emit_data.update_checksum()
 
- event = EVENT_CONTRACT_ZALOG(card,Value = value)
+ event = EVENT_CONTRACT_ZALOG(card,value = value)
 
  try:
   emit_sector.write()
@@ -165,7 +179,7 @@ def register_contract(card,sector_num,aid,pix):
  dirtk.contracts[sector_num - 1] = aidpix
  dirtk.update_checksum()
  dirtk_sector.write()
- card.contract_list += [aidpix.value()]
+ if aid and pix: card.contract_list += [aidpix.value()]
 
 class TransportCard(Card):
  def contract(self):
@@ -193,32 +207,34 @@ class TransportCard(Card):
   dirtk_sector = self.sector(num=DIRTK_SECTOR,key=DIRTK_KEY,method='full')
   dirtk = DIRTK.validate(dirtk_sector.data)
 
-  print emit_data
-  print [hex(contract.value()) for contract in dirtk.contracts]
-
   self.aspp = emit_data.aspp.copy()
   self.contract_list = dirtk.contract_list()
   self.deposit = emit_data.deposit
   self.end_date = DATE(uint16 = emit_data.end_date)
 
-def init(card,aspp,deposit):
- emit = EMIT_SECTOR_DATA(aspp,deposit)
- print emit
+def init(card,aspp):
+ from purse import init as purse_init
+ from card_event import init as card_event_init
 
  emit_sector = card.sector(num=EMIT_SECTOR,key=0,method='full',read=False)
- emit_sector.data = ByteArray(emit)
- print EMIT_SECTOR_DATA.validate(emit_sector.data)
- #emit_sector.write()
- #emit_sector.set_trailer(EMIT_KEY)
+ emit_sector.data.cast(EMIT_SECTOR_DATA).__init__(aspp)
+ emit_sector.write()
+ emit_sector.set_trailer(EMIT_KEY)
 
  dirtk = DIRTK()
  dirtk_sector = card.sector(num=DIRTK_SECTOR,key=0,method='full',read=False)
  dirtk_sector.data = ByteArray(dirtk)
+ dirtk_sector.write()
+ dirtk_sector.set_trailer(DIRTK_KEY)
 
-def clear(card):
+ purse_init(card)
+ card_event_init(card)
+
+def clear(card,sectors = None):
  clear_data = ByteArray(48)()
  s,d = 'static','dynamic'
- suggested = [(1,2,s),(2,3,s),(3,7,s),(4,7,s),(5,6,s),(9,4,s),(10,5,s),(11,8,s),(13,27,d),(14,27,d)]
+ if sectors == None:
+  sectors = [(1,2,s),(2,3,s),(3,7,s),(4,7,s),(5,6,s),(9,4,s),(10,5,s),(11,8,s),(13,27,d),(14,27,d)]
  def clear_sector(num,key,mode):
   try:
    sector = card.sector(num=num,key=key,mode=mode,blocks=(0,))
@@ -230,7 +246,7 @@ def clear(card):
    card.reset()
    return clear_sector(num,0,'static') if key else False
 
- return all(clear_sector(*args) for args in suggested)
+ return all(clear_sector(*args) for args in sectors)
 
 def validate(card):
  card.__class__ = TransportCard

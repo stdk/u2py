@@ -132,13 +132,10 @@ def change_value(card,value):
   if event.Amount: event.save(card)
 
 def init(card):
- purse = CONTRACT_A(PURSE_STATIC_DATA,PURSE_DYNAMIC_DATA)
  sector = card.sector(num=SECTOR,key=0,method='full',read=False)
- sector.data = ByteArray(purse)
-
- contract = CONTRACT_A.validate(sector,PURSE_STATIC_DATA,PURSE_DYNAMIC_DATA)
- print contract.static
- print contract.dynamic
+ sector.data.cast(CONTRACT_A).__init__(PURSE_STATIC_DATA,PURSE_DYNAMIC_DATA)
+ sector.write()
+ sector.set_trailer(KEY)
 
 if __name__ == "__main__":
  import transport_card
