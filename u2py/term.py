@@ -360,8 +360,16 @@ def test_available():
    print date.strftime("%d/%m/%y"),':',ret[0],[i.strftime("%d/%m/%y") for i in ret[1]]
 
 if __name__ == '__main__':
- test_available()
- test()
+ #test_available()
+ #test()
+ x = PACK_A()
+ x.priority = 0xFFFF
+ x.place = 0xFFFF
+ x.sn = 0xFFFF
+ x.sale_aid = 0xFFFF
+ x.device_number = 0xFFFF
+
+ print x
 
 
 
