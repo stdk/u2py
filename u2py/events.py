@@ -115,9 +115,13 @@ class EVENT_CONTRACT_ZALOG(Event,DumpableStructure):
  def card_event_price(self):
   return self.Value
 
- def __init__(self, card = None, **kw):
+ def __init__(self, card = None,value = None,**kw):
+  if value != None:
+   self.TransactionType = 3 if value < 0 else 0
+   self.Value = abs(value)
   Event.__init__(self,**kw)
   if card: fill_event_from_card(self,card)
+
 
 @Event.register
 class EVENT_ENCASHMENT(Event,DumpableStructure):
@@ -132,10 +136,10 @@ class EVENT_ENCASHMENT(Event,DumpableStructure):
  ]
 
  def __init__(self,**kw):
-  Event.__init__(self,**kw)
   self.EventVer = 2
   self.CashCardSN = config.cash_card_sn
   self.CashASPPSN = ASPP.convert(config.cash_card_aspp)
+  Event.__init__(self,**kw)
 
 if __name__ == '__main__':
  import config
@@ -148,9 +152,9 @@ if __name__ == '__main__':
  card = Reader().scan()
  transport_card.validate(card)
 
- x = events.EVENT_CONTRACT_ZALOG(card)
+ x = events.EVENT_ENCASHMENT(Amount = 1000)
  print x
- x.save(card)
+ x.save()
 
  print events.Event.load_last()
 
