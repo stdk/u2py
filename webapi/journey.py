@@ -19,7 +19,7 @@ class journey_refill(APIHandler):
     'response': {
         "after": 'Информация о состоянии контракта и транспортного кошелька после выполнения команды',
         'sn': 'Серийный номер бесконтактной карточки, число',
-        'aspp': 'АСПП номер транспортной карточки вида 0000 0000 0000 0000, строка',
+        'aspp': 'АСПП номер транспортной карточки вида 0000000000000000, строка',
         "error": 'Информация об ошибке, возникшей при выполнении вызова API.',
         "before": 'Информация о состоянии контракта и транспортного кошелька до выполнения команды',
         "amount_used": 'Сумма, использованная при пополнении кошелька, в копейках'
@@ -54,19 +54,45 @@ class journey_init(APIHandler):
  def GET(self,answer={}):
   answer.update({
     'request': {
-        'reader' : 'число, индекс считывателя бесконтактных карточек'
+        'reader' : 'число, индекс считывателя бесконтактных карточек',
+        'deposit': 'число, опциональный параметр: залоговая стоимость контракта'
     },
     'response': {
         'sn': 'Серийный номер бесконтактной карточки, число',
-        'aspp': 'АСПП номер транспортной карточки вида 0000 0000 0000 0000, строка',
+        'aspp': 'АСПП номер транспортной карточки вида 0000000000000000, строка',
         "error": 'Информация об ошибке, возникшей при выполнении вызова API.',
     }
   })
 
- def POST(self, reader, amount, answer={}, fast=False, **kw):
-   card = reader.scan()
-   answer['sn'] = card.sn.sn7()
-   transport_card.validate(card)
-   answer['aspp'] = str(card.aspp)
+ def POST(self, reader, amount, deposit = None, answer={}, fast=False, **kw):
+  card = reader.scan()
+  answer['sn'] = card.sn.sn7()
 
-   journey.init(card)
+  journey.init(card,deposit)
+
+  answer['aspp'] = str(card.aspp)
+
+class journey_remove(APIHandler):
+ url = '/api/journey/remove'
+
+ need_server = config.write_api_requires_server
+
+ def GET(self,answer={}):
+  answer.update({
+    'request': {
+        'reader' : 'число, индекс считывателя бесконтактных карточек',
+    },
+    'response': {
+        'sn': 'Серийный номер бесконтактной карточки, число',
+        'aspp': 'АСПП номер транспортной карточки вида 0000000000000000, строка',
+        "error": 'Информация об ошибке, возникшей при выполнении вызова API.',
+    }
+  })
+
+ def POST(self, reader, answer={}, fast=False, **kw):
+  card = reader.scan()
+  answer['sn'] = card.sn.sn7()
+
+  journey.remove(card)
+
+  answer['aspp'] = str(card.aspp)

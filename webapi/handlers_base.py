@@ -6,6 +6,7 @@ if __name__ == '__main__':
 import config
 import web
 from json import JSONEncoder,dumps,loads
+from inspect import getargspec
 from sys import platform
 if platform == 'win32':
  from time import clock as clock
@@ -48,6 +49,10 @@ def prepare_request(post_data,readers):
 def api_callback(self,callback,post_data = None):
  #currently, we allow api to be called crossdomain
  web.header('Access-Control-Allow-Origin','*')
+
+ #argspec = getargspec(callback)
+ #required_args = argspec.args[1:-len(argspec.defaults)]
+ #print required_args
 
  answer = { 'error' : None }
  try:

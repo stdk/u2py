@@ -16,19 +16,19 @@ class register_contract(APIHandler):
     },
     'response': {
         'sn': 'строка, набор байт в шестнадцатеричном виде разделенных пробелом, серийный номер считывателя БК, версия которого опрашивается (присутствует если указан ключ reader в запросе',
-        'version': 'массив чисел, версия ПО запрашиваемого объекта',
+        'version': 'строка, версия ПО запрашиваемого объекта',
         'stoplist': 'число, версия стоплиста установленного в сервис',
         'error': 'Информация об ошибке, возникшей при выполнении вызова API.',
     }
   })
 
- def POST(self,reader,answer={},**kw):
+ def POST(self,reader = None,answer={},**kw):
   if reader:
    answer.update({
     'sn'     : reader.sn(),
     'version': reader.version()
    })
   else:
-   answer['version'] = VERSION
+   answer['version'] = '.'.join(str(i) for i in VERSION)
    answer['stoplist'] = State.get_stoplist_version()
 

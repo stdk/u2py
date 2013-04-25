@@ -9,6 +9,7 @@ from web import form,NotFound
 from handlers_base import Handler,urls
 
 import scan
+import card
 import journey
 import register
 import term
