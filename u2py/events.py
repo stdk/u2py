@@ -34,13 +34,12 @@ class EVENT_WALLET_OPERATION2(Event,DumpableStructure):
     ('GlobalTransactions',c_uint16) #TCTransactionNumber
  ]
 
- def __init__(self,card=None,value=None,**kw):
-  Event.__init__(self,**kw)
-  self.CashCardSN = config.cash_card_sn
+ def __init__(self,card=None,amount=None,**kw):
   if card: fill_event_from_card(self,card)
-  if value:
-   self.TransactionType = 0 if value >= 0 else 3
-   self.Amount = abs(value)
+  if amount:
+   self.TransactionType = 0 if amount >= 0 else 3
+   self.Amount = abs(amount)
+  Event.__init__(self,**kw)
 
 @Event.register
 class EVENT_CONTRACT_ADD2(Event,DumpableStructure):
@@ -68,8 +67,8 @@ class EVENT_CONTRACT_ADD2(Event,DumpableStructure):
   return self.TransactionValue
 
  def __init__(self, card = None, **kw):
-  Event.__init__(self,**kw)
   if card: fill_event_from_card(self,card)
+  Event.__init__(self,**kw)
 
 @Event.register
 class EVENT_CONTRACT(Event,DumpableStructure):
@@ -94,8 +93,8 @@ class EVENT_CONTRACT(Event,DumpableStructure):
   return self.Value
 
  def __init__(self, card = None, **kw):
-  Event.__init__(self,**kw)
   if card: fill_event_from_card(self,card)
+  Event.__init__(self,**kw)
 
 @Event.register
 class EVENT_CONTRACT_ZALOG(Event,DumpableStructure):
@@ -119,9 +118,8 @@ class EVENT_CONTRACT_ZALOG(Event,DumpableStructure):
   if value != None:
    self.TransactionType = 3 if value < 0 else 0
    self.Value = abs(value)
-  Event.__init__(self,**kw)
   if card: fill_event_from_card(self,card)
-
+  Event.__init__(self,**kw)
 
 @Event.register
 class EVENT_ENCASHMENT(Event,DumpableStructure):
