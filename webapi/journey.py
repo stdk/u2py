@@ -64,7 +64,7 @@ class journey_init(APIHandler):
     }
   })
 
- def POST(self, reader, amount, deposit = None, answer={}, fast=False, **kw):
+ def POST(self, reader, deposit = None, answer={}, fast=False, **kw):
   card = reader.scan()
   answer['sn'] = card.sn.sn7()
 

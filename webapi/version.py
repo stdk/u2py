@@ -23,7 +23,7 @@ class register_contract(APIHandler):
   })
 
  def POST(self,reader = None,answer={},**kw):
-  if reader:
+  if reader != None:
    answer.update({
     'sn'     : reader.sn(),
     'version': reader.version()

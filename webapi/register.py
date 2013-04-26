@@ -49,7 +49,7 @@ class register_cashier(APIHandler):
     },
     'response': {
         'sn': 'Серийный номер бесконтактной карточки, число',
-        'aspp': 'АСПП номер транспортной карточки вида 0000 0000 0000 0000, строка',
+        'aspp': 'АСПП номер транспортной карточки вида 0000000000000000, строка',
         'staff': 'информация о служебном контракте',
         'personal': 'персональные данные служебного контракта',
         "error": 'Информация об ошибке, возникшей при выполнении вызова API.',
@@ -79,7 +79,6 @@ class register_encashment(APIHandler):
  def GET(self,answer={}):
   answer.update({
     'request': {
-        'reader' : 'число, индекс считывателя бесконтактных карточек',
         'amount'     : 'общая выручка киоска на момент',
         'tag_amount' : 'выручка киоска за жетоны на момент инкассации (входит в amount)',
     },
@@ -88,5 +87,5 @@ class register_encashment(APIHandler):
     }
   })
 
- def POST(self,reader,amount,tag_amount,answer={},**kw):
+ def POST(self,amount,tag_amount,answer={},**kw):
   EVENT_ENCASHMENT(Amount = amount, Value = tag_amount).save()
