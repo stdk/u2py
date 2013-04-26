@@ -3,7 +3,7 @@ from ctypes import *
 from mfex import *
 import config
 
-VERSION = 1,4,0
+VERSION = 1,4,1
 
 P = POINTER
 BLOCK_LENGTH = 16
@@ -71,7 +71,7 @@ def ByteArray(obj,crc_LE = 1,cache = {},copy = False):
  return ByteArrayTemplate
 
 class Reader(c_void_p):
- def __init__(self,path = None,baud = None,impl = None):
+ def __init__(self,path = None,baud = None,impl = None,explicit_error = False):
   '''
   Reader object can be created even if required port cannot be opened.
   It will try to fix itself afterwards.
@@ -82,13 +82,14 @@ class Reader(c_void_p):
     kw = config.reader_path[0]
     path,baud,impl = kw['path'],kw['baud'],kw.get('impl','asio')
   self.path = path
-  self.baud = baud
-  self.impl = impl
+  self.baud = baud if baud != None else 38400
+  self.impl = impl if impl != None else 'asio'
 
   try:
    self.open()
   except ReaderError:
    print 'Cannot open Reader on {0}. Will try to fix afterwards...'.format(self.path)
+   if explicit_error: raise
 
  def is_open(self):
   return self._is_open
@@ -103,7 +104,7 @@ class Reader(c_void_p):
 
  def close(self):
   'Closes current reader connection if it was open before.'
-  print 'Reader.close'
+  print 'Reader.close',self._is_open
   if self._is_open:
    reader_close(self)
    self._is_open = False
@@ -114,15 +115,16 @@ class Reader(c_void_p):
 
  def version(self):
   version = ByteArray(7)()
-  if reader_get_version(self,version): raise ReaderError()
+  if not self.is_open() or reader_get_version(self,version): raise ReaderError()
   return version.cast(c_char*sizeof(version)).raw
 
  def sn(self):
   sn = ByteArray(8)()
-  if reader_get_sn(self,sn): raise ReaderError()
+  if not self.is_open() or reader_get_sn(self,sn): raise ReaderError()
   return sn
 
  def reset_field(self):
+  if not self.is_open(): raise ReaderError()
   if reader_field_off(self) or reader_field_on(self):
    raise ReaderError()
 
