@@ -157,7 +157,7 @@ def set_deposit(card,value = None):
  if emit_data.deposit == value: return
 
  if value > 0 and emit_data.deposit > 0:
-  raise DepositError('Deposit for this transport card already exists.')
+  raise DepositError('Deposit for this transport card already exists')
 
  if value == 0 and emit_data.deposit != 0:
   value = -emit_data.deposit
@@ -230,23 +230,18 @@ def init(card,aspp):
  purse_init(card)
  card_event_init(card)
 
-def clear(card,sectors = None):
- clear_data = ByteArray(48)()
- s,d = 'static','dynamic'
- if sectors == None:
-  sectors = [(1,2,s),(2,3,s),(3,7,s),(4,7,s),(5,6,s),(9,4,s),(10,5,s),(11,8,s),(13,27,d),(14,27,d)]
+def clear(card,sectors):
  def clear_sector(num,key,mode):
   try:
-   sector = card.sector(num=num,key=key,mode=mode,blocks=(0,))
-   sector.data = clear_data
-   sector.write(blocks=(0,1,2))
-   sector.set_trailer(0,mode='static')
+   sector = card.sector(num=num,key=key,mode=mode,method='full',read = False)
+   sector.write()
+   if key: sector.set_trailer(0,mode='static')
    return True
-  except (CardError,SectorReadError,SectorWriteError):
+  except (SectorReadError,SectorWriteError):
    card.reset()
-   return clear_sector(num,0,'static') if key else False
-
- return all(clear_sector(*args) for args in sectors)
+   if key: return clear_sector(num,0,'static')
+   else: raise
+ [clear_sector(*args) for args in sectors]
 
 def validate(card):
  card.__class__ = TransportCard
