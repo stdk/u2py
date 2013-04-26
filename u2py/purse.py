@@ -107,15 +107,15 @@ def get_value(card):
  contract = CONTRACT_A.validate(purse_sector,PURSE_STATIC_DATA,PURSE_DYNAMIC_DATA)
  return contract.dynamic.value
 
-def change_value(card,value):
- event = EVENT_WALLET_OPERATION2(card,value)
+def change_value(card,amount):
+ event = EVENT_WALLET_OPERATION2(card,amount)
 
  purse_sector = card.sector(num=10,key=5,method='full')
  contract = CONTRACT_A.validate(purse_sector,PURSE_STATIC_DATA,PURSE_DYNAMIC_DATA)
 
- if not value: return contract.dynamic.value
+ if not amount: return contract.dynamic.value
 
- contract.dynamic.refill(value)
+ contract.dynamic.refill(amount)
 
  event.LocalTransactions = contract.dynamic.transaction
  event.Value = contract.dynamic.value
