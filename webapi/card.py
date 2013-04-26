@@ -45,4 +45,6 @@ class card_clear(APIHandler):
  def POST(self,reader, answer={}, **kw):
   card = reader.scan()
   answer['sn'] = card.sn.sn7()
-  transport_card.clear(card)
+  s = 'static'
+  sectors = [(1,2,s),(2,3,s),(3,7,s),(4,7,s),(5,6,s),(9,4,s),(10,5,s),(11,8,s)]
+  transport_card.clear(card,sectors)
