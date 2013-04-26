@@ -8,12 +8,12 @@ import os
 from web import form,NotFound
 from handlers_base import Handler,urls
 
-import scan
+import version
 import card
+import scan
 import journey
 import register
 import term
-import version
 import card_event
 
 class index(Handler):
