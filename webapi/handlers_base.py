@@ -1,4 +1,4 @@
-#local development fix
+﻿#local development fix
 if __name__ == '__main__':
  import sys
  sys.path.append('../')
@@ -40,19 +40,31 @@ class Handler(object):
  __metaclass__ = HandlerMetaClass
  templates = web.template.render(config.templates_folder.encode('cp1251'))
 
-def prepare_request(post_data,readers):
- request = loads(post_data)
+class MissingParameterError(Exception):
+ def __init__(self,message):
+  super(MissingParameterError,self).__init__(message)
+
+class JsonError(Exception):
+ def __init__(self,message):
+  super(JsonError,self).__init__(message)
+
+def prepare_request(post_data,readers,required_args=None):
+ if post_data == None: return {}
+ try: request =  loads(post_data)
+ except Exception as e: raise JsonError("{0}: {1}".format(e.__class__.__name__,e))
+
+ if required_args != None:
+  for arg in required_args:
+   if arg not in request:
+    raise MissingParameterError("Missing parameter: {0}".format(arg))
+
  reader_id = request.get('reader',None)
  request['reader'] = None if reader_id == None else readers[reader_id]
  return request
 
-def api_callback(self,callback,post_data = None):
+def api_callback(self,callback,required_args=None,post_data = None):
  #currently, we allow api to be called crossdomain
  web.header('Access-Control-Allow-Origin','*')
-
- #argspec = getargspec(callback)
- #required_args = argspec.args[1:-len(argspec.defaults)]
- #print required_args
 
  answer = { 'error' : None }
  try:
@@ -60,7 +72,7 @@ def api_callback(self,callback,post_data = None):
   if self.need_server and not answer['is_server_present']:
    raise NoServerError('This operation requires vestibule server present')
 
-  request = {} if post_data == None else prepare_request(post_data,self.readers)
+  request = prepare_request(post_data,self.readers,required_args)
 
   clock_begin = clock()
   callback(self,answer=answer,**request)
@@ -72,11 +84,14 @@ def api_callback(self,callback,post_data = None):
  return answer
 
 def post_api(key,callback,name):
+ argspec = getargspec(callback)
+ required_args = argspec.args[1:-len(argspec.defaults)]
+
  def wrapper(self,*args,**kw):
   post_data = web.data()
   logging.debug('{0}[{1}]->[{2}]'.format(key,name,post_data))
 
-  answer = api_callback(self,callback,post_data)
+  answer = api_callback(self,callback,required_args,post_data)
 
   response = dumps(answer,cls=APIEncoder)
   logging.debug('{0}[{1}]<-[{2}]'.format(key,name,response))
@@ -107,3 +122,35 @@ class APIHandler(Handler):
  need_server = config.read_api_requires_server
 
  readers = [Reader(**kw) for kw in reader_path]
+
+class reader_detect(APIHandler):
+ url = '/api/reader/detect'
+
+ need_server = config.write_api_requires_server
+
+ def GET(self,answer={}):
+  answer.update({
+    'request': {},
+    'response': {
+        "readers": "список последовательных портов, идентифицированных как доступные",
+        "error": 'Информация об ошибке, возникшей при выполнении вызова API.',
+    }
+  })
+
+ def POST(self, answer={}, **kw):
+  from serial.tools import list_ports
+  from u2py.mfex import ReaderError
+
+  def identify_port(port):
+   try:
+    reader = Reader(port,explicit_error = True)
+    version,sn = reader.version(),reader.sn()
+    return port,version,sn
+   except ReaderError:
+    return None
+
+  [reader.close() for reader in APIHandler.readers]
+  readers = filter(lambda x:x,[identify_port('\\\\.\\' + com[0]) for com in list_ports.comports()])
+  readers.sort(key = lambda (port,_1,_2): port)
+  answer['readers'] = readers
+  APIHandler.readers = [Reader(reader[0]) for reader in readers]
