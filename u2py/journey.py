@@ -5,10 +5,14 @@ from ctypes import *
 import purse
 from contract import CONTRACT_A
 from events import EVENT_CONTRACT_ADD2,EVENT_CONTRACT
+import config
 
 SECTOR = 11
 KEY = 8
 ENCRYPTION = (0xFF,0xA,0xA)
+
+MAX_JOURNEYS = config.max_journeys
+JOURNEY_COST = config.journey_cost
 
 AID = 0xD01
 PIX = 0x100
@@ -49,9 +53,6 @@ class CONTRACT1_DYNAMIC(DumpableStructure):
   self._mac_key_id = self.VALID_KEY_ID
   cast(pointer(self),POINTER(ByteArray(16))).contents.crc16_calc()
 
- MAX_JOURNEYS = 50
- JOURNEY_COST = 200
-
  def refill(self,amount):
   '''
   >>> data = h2b("99 41 03 00 05 00 4d 32 f1 dc 01 ef bc 0d c3 f1")
@@ -70,16 +71,16 @@ class CONTRACT1_DYNAMIC(DumpableStructure):
   '''
   if amount <= 0: return 0
 
-  value = amount/self.JOURNEY_COST
-  if self.journeys + value > self.MAX_JOURNEYS:
-   value = self.MAX_JOURNEYS - self.journeys
+  value = amount/JOURNEY_COST
+  if self.journeys + value > MAX_JOURNEYS:
+   value = MAX_JOURNEYS - self.journeys
 
   self.journeys += value
   self.transaction += 1
   self.validated_date = DATE()
   self.validated_time = TIME()
 
-  return value*self.JOURNEY_COST
+  return value * JOURNEY_COST
 
  VALID_ID = 0x99
  VALID_RESERVED = [0xEF,0xBC]
@@ -171,14 +172,14 @@ def refill(card,amount):
  contract = CONTRACT_A.validate(sector,CONTRACT1_STATIC,CONTRACT1_DYNAMIC)
 
  purse_value = purse.change_value(card,amount)
- if purse_value < CONTRACT1_DYNAMIC.JOURNEY_COST: return 0
+ if purse_value < JOURNEY_COST: return 0
 
  amount_used = contract.dynamic.refill(purse_value)
  purse.change_value(card,-amount_used)
  event = EVENT_CONTRACT_ADD2(card)
  event.AID,event.PIX = AID,PIX
  event.Value = contract.dynamic.journeys
- event.TransactionValue = amount_used / CONTRACT1_DYNAMIC.JOURNEY_COST
+ event.TransactionValue = amount_used / JOURNEY_COST
  event.Amount = amount_used
  event.LocalTransactions = contract.dynamic.transaction
 
