@@ -16,7 +16,7 @@ DIRTK_KEY    = 3
 class ASPPMixin(object):
  'requires object with iterable data attribute with at least 8 length'
  def __str__(self):
-  return ''.join(["%02x" % (i) for i in self.data[8:0:-1]])
+  return ''.join(["%02x" % (i) for i in self.data[8::-1]])
 
  __repr__ = lambda self: '<' + str(self) + '>'
 
@@ -251,11 +251,11 @@ if __name__ == "__main__":
  from interface import Reader
 
  card = Reader().scan()
- #validate(card)
- #print card
+ validate(card)
+ print card
 
  #print clear(card)
- init(card,'0123456789ABCDEF',DEPOSIT_VALUE)
+ #init(card,'0123456789ABCDEF',DEPOSIT_VALUE)
 
  #set_deposit(card,700)
 
