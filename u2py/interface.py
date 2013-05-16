@@ -3,7 +3,7 @@ from ctypes import *
 from mfex import *
 import config
 
-VERSION = 1,4,1
+VERSION = 1,4,4
 
 P = POINTER
 BLOCK_LENGTH = 16
@@ -122,6 +122,14 @@ class Reader(c_void_p):
   sn = ByteArray(8)()
   if not self.is_open() or reader_get_sn(self,sn): raise ReaderError()
   return sn
+
+ def save(self,path = None):
+  if path == None: path = self.path
+  if not self.is_open() or reader_save(self,path): raise ReaderError()
+
+ def load(self,path = None):
+  if path == None: path = self.path
+  if not self.is_open() or reader_load(self,path): raise ReaderError()
 
  def reset_field(self):
   if not self.is_open(): raise ReaderError()
@@ -311,6 +319,9 @@ reader_field_off        = load(lib,'reader_field_off'          ,(Reader,))
 reader_get_sn           = load(lib,'reader_get_sn'             ,(Reader,P(ByteArray(8))))
 reader_get_version      = load(lib,'reader_get_version'        ,(Reader,P(ByteArray(7))))
 
+reader_save             = load(lib,'reader_save'               ,(Reader,P(c_char)))
+reader_load             = load(lib,'reader_load'               ,(Reader,P(c_char)))
+
 card_scan               = load(lib,'card_scan'                 ,(Reader,P(Card),))
 card_reset              = load(lib,'card_reset'                ,(Reader,P(Card),))
 card_sector_auth        = load(lib,'card_sector_auth'          ,(Reader,P(Card),P(Sector),))
@@ -347,6 +358,8 @@ if __name__ == '__main__':
  import doctest
  doctest.testmod()
 
- reader = Reader(impl='file')
- print reader.sn()
- print reader.version()
+ reader = Reader(path='123',impl='file')
+
+ reader.load('234')
+ #print reader.sn()
+ #print reader.version()
