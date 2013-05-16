@@ -58,8 +58,10 @@ def prepare_request(post_data,readers,required_args=None):
    if arg not in request:
     raise MissingParameterError("Missing parameter: {0}".format(arg))
 
- reader_id = request.get('reader',None)
- request['reader'] = None if reader_id == None else readers[reader_id]
+  if 'reader' in required_args:
+   reader_id = request.get('reader',None)
+   request['reader'] = None if reader_id == None else readers[reader_id]
+
  return request
 
 def api_callback(self,callback,required_args=None,post_data = None):
@@ -122,35 +124,3 @@ class APIHandler(Handler):
  need_server = config.read_api_requires_server
 
  readers = [Reader(**kw) for kw in reader_path]
-
-class reader_detect(APIHandler):
- url = '/api/reader/detect'
-
- need_server = config.write_api_requires_server
-
- def GET(self,answer={}):
-  answer.update({
-    'request': {},
-    'response': {
-        "readers": "список последовательных портов, идентифицированных как доступные",
-        "error": 'Информация об ошибке, возникшей при выполнении вызова API.',
-    }
-  })
-
- def POST(self, answer={}, **kw):
-  from serial.tools import list_ports
-  from u2py.mfex import ReaderError
-
-  def identify_port(port):
-   try:
-    reader = Reader(port,explicit_error = True)
-    version,sn = reader.version(),reader.sn()
-    return port,version,sn
-   except ReaderError:
-    return None
-
-  [reader.close() for reader in APIHandler.readers]
-  readers = filter(lambda x:x,[identify_port('\\\\.\\' + com[0]) for com in list_ports.comports()])
-  readers.sort(key = lambda (port,_1,_2): port)
-  answer['readers'] = readers
-  APIHandler.readers = [Reader(reader[0]) for reader in readers]
