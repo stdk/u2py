@@ -8,13 +8,14 @@ import os
 from web import form,NotFound
 from handlers_base import Handler,urls
 
-import version
-import card
 import scan
+import card
 import journey
 import register
 import term
 import card_event
+import version
+import reader
 
 class index(Handler):
  refill_journey_form = form.Form(
