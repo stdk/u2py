@@ -37,6 +37,7 @@ class AppStatus(DumpableBigEndianStructure):
  def __init__(self):
   self.id = self.VALID_ID
   self.version = self.VALID_VERSION
+  self.record = 5 # index if last record is purposedly made (6-1) to write first event at the appropriate place
   self.update_checksum()
 
  def update_checksum(self):
@@ -111,8 +112,9 @@ def read(card):
  event_sector1 = card.sector(num = SECTOR    ,key = KEY, method = 'full')
  event_sector2 = card.sector(num = SECTOR + 1,key = KEY, method = 'full')
 
- return EventList.validate(event_sector1.data).events[:] + \
-        EventList.validate(event_sector2.data).events[:]
+ events = EventList.validate(event_sector1.data).events[:] + \
+          EventList.validate(event_sector2.data).events[:]
+ return [event.to_dict() for event in events]
 
 def init(card):
  def init_event_sector(num):
