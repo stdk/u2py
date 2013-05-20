@@ -26,8 +26,8 @@ class journey_refill(APIHandler):
     }
   })
 
- def POST(self, reader, amount, answer={}, fast=False, **kw):
-   card = reader.scan()
+ def POST(self, reader, amount, sn = None, fast=False, answer={}, **kw):
+   card = reader.scan(sn)
    answer['sn'] = card.sn.sn7()
    transport_card.validate(card)
    answer['aspp'] = str(card.aspp)
@@ -64,8 +64,8 @@ class journey_init(APIHandler):
     }
   })
 
- def POST(self, reader, deposit = None, answer={}, fast=False, **kw):
-  card = reader.scan()
+ def POST(self, reader, deposit = None, sn = None, answer={}, fast=False, **kw):
+  card = reader.scan(sn)
   answer['sn'] = card.sn.sn7()
 
   journey.init(card,deposit)
@@ -89,8 +89,8 @@ class journey_remove(APIHandler):
     }
   })
 
- def POST(self, reader, answer={}, fast=False, **kw):
-  card = reader.scan()
+ def POST(self, reader, sn = None, answer={}, fast=False, **kw):
+  card = reader.scan(sn)
   answer['sn'] = card.sn.sn7()
 
   journey.remove(card)

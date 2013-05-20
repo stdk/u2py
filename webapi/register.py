@@ -28,8 +28,8 @@ class register_contract(APIHandler):
     }
   })
 
- def POST(self,reader,amount,answer={},**kw):
-  card = reader.scan()
+ def POST(self,reader,amount,sn = None,answer={},**kw):
+  card = reader.scan(sn)
   answer['sn'] = card.sn.sn7()
   transport_card.validate(card)
   answer['aspp'] = str(card.aspp)
@@ -56,8 +56,8 @@ class register_cashier(APIHandler):
     }
   })
 
- def POST(self,reader,password,answer={},**kw):
-  card = reader.scan()
+ def POST(self,reader,password,sn = None,answer={},**kw):
+  card = reader.scan(sn)
   answer['sn'] = card.sn.sn7()
   transport_card.validate(card)
   answer['aspp'] = str(card.aspp)

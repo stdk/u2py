@@ -1,6 +1,8 @@
 ﻿from handlers_base import APIHandler
 import config
 
+from u2py.interface import Reader
+
 class reader_detect(APIHandler):
  url = '/api/reader/detect'
 

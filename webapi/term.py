@@ -57,8 +57,8 @@ class term_refill(APIHandler):
 
   answer['after'] = { 'term' : ultralight.read(card) }
 
- def POST(self, reader, amount, answer={}, fast=False, **kw):
-   card = reader.scan()
+ def POST(self, reader, amount, sn = None, answer={}, fast=False, **kw):
+   card = reader.scan(sn)
    answer['sn'] = card.sn.sn7()
    answer['ultralight'] = card.type == ULTRALIGHT
 
@@ -120,8 +120,8 @@ class term_available(APIHandler):
     'cost': cost
    }
 
- def POST(self,reader,answer={},**kw):
-   card = reader.scan()
+ def POST(self,reader,sn = None,answer={},**kw):
+   card = reader.scan(sn)
    answer['sn'] = card.sn.sn7()
    answer['ultralight'] = card.type == ULTRALIGHT
 

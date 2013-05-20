@@ -93,8 +93,8 @@ class scan(APIHandler):
    }
   })
 
- def POST(self,reader, answer={}, fast=False, **kw):
-  card = reader.scan()
+ def POST(self, reader, sn = None, answer={}, fast=False, **kw):
+  card = reader.scan(sn)
 
   answer['sn'] = card.sn.sn7()
   answer['ultralight'] = card.type == ULTRALIGHT

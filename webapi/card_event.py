@@ -19,8 +19,8 @@ class card_event(APIHandler):
    }
   })
 
- def POST(self,reader,answer={},**kw):
-  card = reader.scan()
+ def POST(self, reader, sn = None, answer={}, **kw):
+  card = reader.scan(sn)
   answer['sn'] = card.sn.sn7()
 
   transport_card.validate(card)

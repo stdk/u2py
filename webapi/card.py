@@ -21,8 +21,8 @@ class card_init(APIHandler):
   })
 
 
- def POST(self,reader, aspp, answer={}, **kw):
-  card = reader.scan()
+ def POST(self,reader, aspp, sn = None, answer={}, **kw):
+  card = reader.scan(sn)
   answer['sn'] = card.sn.sn7()
   transport_card.init(card,aspp)
 
@@ -42,8 +42,8 @@ class card_clear(APIHandler):
     }
   })
 
- def POST(self,reader, answer={}, **kw):
-  card = reader.scan()
+ def POST(self,reader, sn = None, answer={}, **kw):
+  card = reader.scan(sn)
   answer['sn'] = card.sn.sn7()
   s = 'static'
   sectors = [(1,2,s),(2,3,s),(3,7,s),(4,7,s),(5,6,s),(9,4,s),(10,5,s),(11,8,s)]
