@@ -58,9 +58,8 @@ def prepare_request(post_data,readers,required_args=None):
    if arg not in request:
     raise MissingParameterError("Missing parameter: {0}".format(arg))
 
-  if 'reader' in required_args:
-   reader_id = request.get('reader',None)
-   request['reader'] = None if reader_id == None else readers[reader_id]
+  reader_id = request.get('reader',None)
+  request['reader'] = None if reader_id == None else readers[reader_id]
 
  return request
 
@@ -70,19 +69,21 @@ def api_callback(self,callback,required_args=None,post_data = None):
 
  answer = { 'error' : None }
  try:
+  clock_begin = clock()
+
   answer['is_server_present'] = State.is_server_present()
   if self.need_server and not answer['is_server_present']:
    raise NoServerError('This operation requires vestibule server present')
 
   request = prepare_request(post_data,self.readers,required_args)
 
-  clock_begin = clock()
   callback(self,answer=answer,**request)
-  answer['time_elapsed'] = clock() - clock_begin
  except MFEx as e:
   answer['error'] = e
  except Exception as e:
   answer['error'] = { 'type': unicode(e.__class__.__name__), 'message': str(e) }
+ finally:
+  answer['time_elapsed'] = clock() - clock_begin
  return answer
 
 def post_api(key,callback,name):
