@@ -16,6 +16,10 @@ class CardError(Exception):
  def __str__(self):
   return 'There is no card in reader field'
 
+class WrongCardError(Exception):
+ def __str__(self):
+  return 'Card in reader field is not the requested one'
+
 class StoplistError(Exception):
  def __str__(self):
   return 'This card is stoplisted'
