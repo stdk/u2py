@@ -3,7 +3,7 @@ from ctypes import *
 from mfex import *
 import config
 
-VERSION = 1,4,4
+VERSION = 1,4,7
 
 P = POINTER
 BLOCK_LENGTH = 16
@@ -136,15 +136,17 @@ class Reader(c_void_p):
   if reader_field_off(self) or reader_field_on(self):
    raise ReaderError()
 
- def scan(self):
+ def scan(self, sn = None):
   '''
   Resets reader field and returns Card object with information
   about card currently in field.
   Checks for a reader state and tries to open it if closed.
+  Giving optional argument sn initiates checked scan procedure:
+  it gives WrongCardError when card serial number in fiels != given sn.
   '''
   if not self._is_open: self.open()
   self.reset_field()
-  return Card(self,scan=True)
+  return Card(self,scan = True,prev_sn = sn)
 
  def __del__(self):
   print 'Reader.__del__',self
@@ -195,13 +197,14 @@ class Card(Structure):
  def __del__(self):
   pass#print self.__class__.__name__,'__del__'
 
- def __init__(self, reader, scan = False):
+ def __init__(self, reader, scan = False, prev_sn = None):
   #print self.__class__.__name__,'__init__'
-  if scan and self.scan(reader): raise CardError()
   self.reader = reader
+  if scan: self.scan(prev_sn)
 
- def scan(self, reader):
-  return card_scan(reader,self)
+ def scan(self, prev_sn = None):
+  if card_scan(self.reader,self): raise CardError()
+  if prev_sn != None and self.sn.sn7() != prev_sn: raise WrongCardError()
 
  def reset(self):
   if card_reset(self.reader,self): raise CardError()
@@ -227,10 +230,12 @@ class Sector(DumpableStructure):
  ZeroDivisionError: integer division or modulo by zero
  '''
  _pack_ = 1
- _fields_ = [('num',c_uint8),
-             ('key',c_uint8),
-             ('mode',c_uint8), # 0 for static authentication, 1 for dynamic authentication
-             ('data',ByteArray(BLOCK_LENGTH*3))]
+ _fields_ = [
+    ('data',ByteArray(BLOCK_LENGTH*3)),
+    ('num',c_uint8),
+    ('key',c_uint8),
+    ('mode',c_uint8) # 0 for static authentication, 1 for dynamic authentication
+ ]
 
  def __del__(self):
   pass#print self.__class__.__name__,'__del__',self.num
@@ -358,8 +363,7 @@ if __name__ == '__main__':
  import doctest
  doctest.testmod()
 
- reader = Reader(path='123',impl='file')
+ reader = Reader()
 
- reader.load('234')
- #print reader.sn()
- #print reader.version()
+ print reader.sn()
+ print reader.version()
