@@ -4,11 +4,14 @@ from datetime import datetime,date
 from config import logging
 from copy import deepcopy
 from time import clock
+from threading import Semaphore
 
 IO_ERROR           = 0x0E000001
 
 def strParams(params):
  return '( {0} )'.format(', '.join( [str(param) for param in params] ))
+
+lock = Semaphore(1)
 
 def load(library,name,args,res = c_long):
  function = library[name]
@@ -16,20 +19,27 @@ def load(library,name,args,res = c_long):
  function.restype = res
  def wrapper(*params):
   begin_clock = clock()
-  ret = function(*params)
-  time_elapsed = clock() - begin_clock
+  #print 'interface_basis.lock.acquire',name
+  lock.acquire()
+  try:
+   ret = function(*params)
+   time_elapsed = clock() - begin_clock
 
-  logging.debug(' | '.join( ["%6.4f" % (time_elapsed),name,strParams(params),hex(ret)] ))
+   logging.debug(' | '.join( ["%6.4f" % (time_elapsed),name,strParams(params),hex(ret)] ))
 
-  if ret == IO_ERROR: #special case for unavailable reader
-   #if some function returned IO_ERROR it means its first parameter
-   #belongs to Reader class -> should be reopened
-   try: params[0].reopen()
-   except: pass
-   #still, IOError should be raised to notify high level about error
-   raise IOError('{0}:{1}'.format(name,strParams(params)))
+   if ret == IO_ERROR: #special case for unavailable reader
+    #if some function returned IO_ERROR it means its first parameter
+    #belongs to Reader class -> should be reopened
+    try: params[0].reopen()
+    except: pass
+    #still, IOError should be raised to notify high level about error
+    raise IOError('{0}:{1}'.format(name,strParams(params)))
 
-  return ret
+   return ret
+  finally:
+   #print 'interface_basis.lock.release',name
+   lock.release()
+
  return wrapper
 
 class Dumpable(object):
