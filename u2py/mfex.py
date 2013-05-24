@@ -16,6 +16,12 @@ class CardError(Exception):
  def __str__(self):
   return 'There is no card in reader field'
 
+class MFPlusError(Exception):
+ def __init__(self,message):
+  self.message = message
+ def __str__(self):
+  return self.message
+
 class WrongCardError(Exception):
  def __str__(self):
   return 'Card in reader field is not the requested one'
