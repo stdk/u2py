@@ -13,6 +13,7 @@ class card_init(APIHandler):
     'request': {
         'reader' : 'число, индекс считывателя бесконтактных карточек',
         'aspp'   : 'строка, АСПП номер транспортной карточки вида 0000000000000000',
+        'sn'     : 'опциональный параметр; cерийный номер требуемой бесконтактной карточки, число',
     },
     'response': {
         'sn': 'Серийный номер бесконтактной карточки, число',
@@ -35,6 +36,7 @@ class card_clear(APIHandler):
   answer.update({
     'request': {
         'reader' : 'число, индекс считывателя бесконтактных карточек',
+        'sn'     : 'опциональный параметр; cерийный номер требуемой бесконтактной карточки, число',
     },
     'response': {
         'sn': 'Серийный номер бесконтактной карточки, число',
@@ -48,3 +50,26 @@ class card_clear(APIHandler):
   s = 'static'
   sectors = [(1,2,s),(2,3,s),(3,7,s),(4,7,s),(5,6,s),(9,4,s),(10,5,s),(11,8,s)]
   transport_card.clear(card,sectors)
+
+class card_plus_perso(APIHandler):
+ url = '/api/card/plus/perso'
+
+ need_server = config.write_api_requires_server
+
+ def GET(self,answer={}):
+  answer.update({
+    'request': {
+        'reader' : 'число, индекс считывателя бесконтактных карточек',
+        'sn'     : 'опциональный параметр; cерийный номер требуемой бесконтактной карточки, число',
+    },
+    'response': {
+        'sn': 'Серийный номер бесконтактной карточки, число',
+        "error": 'Информация об ошибке, возникшей при выполнении вызова API.',
+    }
+  })
+
+ def POST(self,reader, sn = None, answer={}, **kw):
+  card = reader.scan(sn)
+  answer['sn'] = card.sn.sn7()
+
+  card.mfplus_personalize()
