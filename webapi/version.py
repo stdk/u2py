@@ -1,7 +1,7 @@
 ﻿from handlers_base import APIHandler
 import config
 
-from u2py.interface import Reader,VERSION
+from u2py.config import VERSION
 from adbk.state import State
 
 class register_contract(APIHandler):
