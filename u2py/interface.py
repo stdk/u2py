@@ -2,14 +2,15 @@ from interface_basis import load,DumpableStructure,DumpableBigEndianStructure,DA
 from ctypes import *
 from mfex import *
 import config
-
-VERSION = 1,4,7
+from threading import Semaphore
 
 P = POINTER
 BLOCK_LENGTH = 16
 
 STANDARD   = 0x4
 ULTRALIGHT = 0x44
+
+DEBUG = False
 
 def ByteArray(obj,crc_LE = 1,cache = {},copy = False):
  if not isinstance(obj,int):
@@ -77,6 +78,7 @@ class Reader(c_void_p):
   It will try to fix itself afterwards.
   To check current Reader status use 'is_open' method.
   '''
+  self.lock = Semaphore(1)
   self._is_open = False
   if not path:
     kw = config.reader_path[0]
@@ -96,15 +98,16 @@ class Reader(c_void_p):
 
  def open(self):
   'Opens reader on a given port and raises ReaderError otherwise.'
-  print 'Reader.open',(self.path,self.baud,self.impl)
+  if DEBUG: print 'Reader.open',(self.path,self.baud,self.impl)
   if not self._is_open:
    if reader_open(self.path,self.baud,self.impl,self): raise ReaderError()
-   print 'Reader.open success:',self
+   #print 'Reader.open success:',self
    self._is_open = True
+   self.reset_field()
 
  def close(self):
   'Closes current reader connection if it was open before.'
-  print 'Reader.close',self._is_open
+  #print 'Reader.close',self._is_open
   if self._is_open:
    reader_close(self)
    self._is_open = False
@@ -145,11 +148,11 @@ class Reader(c_void_p):
   it gives WrongCardError when card serial number in fiels != given sn.
   '''
   if not self._is_open: self.open()
-  self.reset_field()
+  #self.reset_field()
   return Card(self,scan = True,prev_sn = sn)
 
  def __del__(self):
-  print 'Reader.__del__',self
+  if DEBUG: print 'Reader.__del__',self
   self.close()
 
  def __str__(self):
@@ -179,7 +182,6 @@ class SerialNumber(Structure):
 
  def __str__(self):
   return str(self.sn)
-  #return '{0}:{1}:{2}'.format(self.sak,self.sn,self.len)
 
 class Card(Structure):
  '''
@@ -195,11 +197,13 @@ class Card(Structure):
  __repr__ = __str__
 
  def __del__(self):
-  pass#print self.__class__.__name__,'__del__'
+  if DEBUG: print self.__class__.__name__,'__del__'
+  self.reader.lock.release()
 
  def __init__(self, reader, scan = False, prev_sn = None):
-  #print self.__class__.__name__,'__init__'
+  if DEBUG: print self.__class__.__name__,'__init__'
   self.reader = reader
+  self.reader.lock.acquire()
   if scan: self.scan(prev_sn)
 
  def scan(self, prev_sn = None):
@@ -218,6 +222,11 @@ class Card(Structure):
   self.auth(sector)
   if read: sector.read()
   return sector
+
+ def mfplus_personalize(self):
+  ret = card_mfplus_personalize(self.reader,self)
+  print ret
+  if ret: raise MFPlusError('Cannot personalize this card')
 
 class Sector(DumpableStructure):
  '''
@@ -238,7 +247,7 @@ class Sector(DumpableStructure):
  ]
 
  def __del__(self):
-  pass#print self.__class__.__name__,'__del__',self.num
+  if DEBUG: print self.__class__.__name__,'__del__',self.num
 
  def __init__(self, card, num = 0, key = 0, enc = None,
               mode = None, method = None, blocks = (0,1,2)):
@@ -260,7 +269,8 @@ class Sector(DumpableStructure):
   method by default when calling I/O function without explicitly specifying blocks affected.
   Default value is (0,1,2). This arguments has no effect with 'full' method.
   '''
-  #print 'Sector.__init__',num
+  if DEBUG: print 'Sector.__init__',num
+
   self.card = card
   self.num = num
   self.key = key
@@ -327,6 +337,7 @@ reader_get_version      = load(lib,'reader_get_version'        ,(Reader,P(ByteAr
 reader_save             = load(lib,'reader_save'               ,(Reader,P(c_char)))
 reader_load             = load(lib,'reader_load'               ,(Reader,P(c_char)))
 
+card_mfplus_personalize = load(lib,'card_mfplus_personalize'   ,(Reader,P(Card)))
 card_scan               = load(lib,'card_scan'                 ,(Reader,P(Card),))
 card_reset              = load(lib,'card_reset'                ,(Reader,P(Card),))
 card_sector_auth        = load(lib,'card_sector_auth'          ,(Reader,P(Card),P(Sector),))
