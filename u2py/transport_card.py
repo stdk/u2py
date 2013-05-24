@@ -231,7 +231,12 @@ def init(card,aspp):
  card_event_init(card)
 
 def clear(card,sectors):
- def clear_sector(num,key,mode):
+ def clear_sector(card,num,key,mode):
+  '''
+  This function explicitly accepts card parameter to ensure correct
+  behaviour of reference counting mechanism. Without it, card object
+  could not be deleted (at least in Python 2.7.3).
+  '''
   try:
    sector = card.sector(num=num,key=key,mode=mode,method='full',read = False)
    sector.write()
@@ -239,9 +244,9 @@ def clear(card,sectors):
    return True
   except (SectorReadError,SectorWriteError):
    card.reset()
-   if key: return clear_sector(num,0,'static')
+   if key: return clear_sector(card,num,0,'static')
    else: raise
- [clear_sector(*args) for args in sectors]
+ [clear_sector(card,*args) for args in sectors]
 
 def validate(card):
  card.__class__ = TransportCard
