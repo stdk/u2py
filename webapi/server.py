@@ -1,5 +1,11 @@
 ﻿# -*- coding: utf-8 -*-
-from gevent.wsgi import WSGIServer
+#from gevent.wsgi import WSGIServer
+
+from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+from wsgiref import simple_server
+from SocketServer import ThreadingMixIn
+
+class MyWSGIServer(ThreadingMixIn, simple_server.WSGIServer): pass
 
 import os
 import web
@@ -22,4 +28,5 @@ def run(ssl=None,logger='default'):
 
  print 'Serving on {0}:{1}...'.format(host,port)
 
- WSGIServer((host, port), app, log = logger, **kw).serve_forever()
+ #WSGIServer((host, port), app, log = logger, **kw).serve_forever()
+ simple_server.make_server(host,port,app,server_class=MyWSGIServer).serve_forever()
