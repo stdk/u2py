@@ -8,11 +8,9 @@ import web
 from json import JSONEncoder,dumps,loads
 from inspect import getargspec
 from sys import platform
-if platform == 'win32':
- from time import clock as clock
 
-if platform == 'linux2':
- from time import time as clock
+if platform == 'win32': from time import clock as clock
+if platform == 'linux2': from time import time as clock
 
 from u2py.config import logging,reader_path
 from u2py.mfex import MFEx
@@ -66,6 +64,7 @@ def prepare_request(post_data,readers,required_args=None):
 def api_callback(self,callback,required_args=None,post_data = None):
  #currently, we allow api to be called crossdomain
  web.header('Access-Control-Allow-Origin','*')
+ web.header('Content-Type','application/json; charset=utf-8')
 
  answer = { 'error' : None }
  try:
@@ -88,7 +87,7 @@ def api_callback(self,callback,required_args=None,post_data = None):
 
 def post_api(key,callback,name):
  argspec = getargspec(callback)
- required_args = argspec.args[1:-len(argspec.defaults)]
+ required_args = argspec.args[1:-len(argspec.defaults or [])]
 
  def wrapper(self,*args,**kw):
   post_data = web.data()
