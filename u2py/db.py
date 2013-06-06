@@ -4,7 +4,7 @@ from card_event import CardEvent
 from mfex import *
 import config
 
-db_connection = sqlite3.connect(config.db_filename,detect_types=sqlite3.PARSE_DECLTYPES)
+db_connection = sqlite3.connect(config.db_filename,detect_types=sqlite3.PARSE_DECLTYPES,check_same_thread = False)
 db_connection.row_factory = sqlite3.Row
 
 NO_RESOURCE    = 1
@@ -70,6 +70,8 @@ sqlite3.register_adapter(ASPP, ASPP.__repr__)
 sqlite3.register_converter("ASPP_TEXT", ASPP.convert)
 
 with db_connection as c:
+ c.executescript("PRAGMA journal_mode=WAL;")
+ #c.executescript("PRAGMA synchronous = OFF;");
  c.executescript(create_query)
 
 class Event(object):
