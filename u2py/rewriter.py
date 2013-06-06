@@ -60,16 +60,20 @@ class Widget(QMainWindow):
 
   #Blockwise and bytewise implementations have issues with default comm timeouts
   #that can lead to spontaneous host computer reboot. Using asio instead.
-  self.reader = Reader(path,baud,'blockwise')
+  self.reader = Reader(path,baud,'asio',explicit_error = True)
 
   if not self.reader.is_open():
    return self.ui.statusbar.showMessage('Cannot open port')
 
-  sn = ByteArray(8)()
-  version = ByteArray(7)()
-  ret = reader_get_sn(self.reader,sn),reader_get_version(self.reader,version)
-  #if any(ret): return self.ui.statusbar.showMessage('There is no reader at the other side')
-  self.setWindowTitle('Reader %s:%s' % (sn,version.cast(c_char*7).raw))
+  try:
+   sn = ByteArray(8)()
+   version = ByteArray(7)()
+   ret = reader_get_sn(self.reader,sn),reader_get_version(self.reader,version)
+   self.setWindowTitle('Reader %s:%s' % (sn,version.cast(c_char*7).raw))
+  except IOError:
+   self.ui.statusbar.showMessage('There is no reader at the other side')
+   del self.reader
+   return
 
   self.set_buttons_enabled(False,True,True)
   self.ui.port.setEnabled(False)
