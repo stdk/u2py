@@ -103,7 +103,6 @@ class Reader(c_void_p):
    if reader_open(self.path,self.baud,self.impl,self): raise ReaderError()
    #print 'Reader.open success:',self
    self._is_open = True
-   self.reset_field()
 
  def close(self):
   'Closes current reader connection if it was open before.'
@@ -148,7 +147,7 @@ class Reader(c_void_p):
   it gives WrongCardError when card serial number in fiels != given sn.
   '''
   if not self._is_open: self.open()
-  #self.reset_field()
+  self.reset_field()
   return Card(self,scan = True,prev_sn = sn)
 
  def __del__(self):
