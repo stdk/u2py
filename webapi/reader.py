@@ -26,7 +26,7 @@ class reader_detect(APIHandler):
     reader = Reader(port,explicit_error = True)
     version,sn = reader.version(),reader.sn()
     return port,version,sn
-   except ReaderError:
+   except (ReaderError,IOError):
     return None
 
   [reader.close() for reader in APIHandler.readers]
