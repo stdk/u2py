@@ -1,6 +1,8 @@
 ﻿import logging
 import logging.config
 
+VERSION = 1,5,7
+
 lib_filename      = '../u2.dll'
 db_filename       = 'db.db3'
 
