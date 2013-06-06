@@ -27,18 +27,18 @@ def load(library,name,args,res = c_long):
 
    logging.debug(' | '.join( ["%6.4f" % (time_elapsed),name,strParams(params),hex(ret)] ))
 
-   if ret == IO_ERROR: #special case for unavailable reader
+   return ret
+  finally:
+   #print 'interface_basis.lock.release',name
+   lock.release()
+
+   if ret >= IO_ERROR: #special case for unavailable reader
     #if some function returned IO_ERROR it means its first parameter
     #belongs to Reader class -> should be reopened
     try: params[0].reopen()
     except: pass
     #still, IOError should be raised to notify high level about error
-    raise IOError('{0}:{1}'.format(name,strParams(params)))
-
-   return ret
-  finally:
-   #print 'interface_basis.lock.release',name
-   lock.release()
+    raise IOError('{0}({1}: {2}'.format(name,strParams(params),hex(ret)))
 
  return wrapper
 
