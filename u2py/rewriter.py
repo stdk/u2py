@@ -5,8 +5,8 @@ from sys import stderr
 from multiprocessing.pool import ThreadPool
 from threading import Event
 from PyQt4 import QtGui,QtCore,uic
-from PyQt4.QtGui import QFileDialog,QMainWindow,QStandardItemModel,QStandardItem
-from PyQt4.QtCore import pyqtSignal
+from PyQt4.QtGui import QFileDialog,QMainWindow,QStandardItemModel,QStandardItem, QApplication, QCursor
+from PyQt4.QtCore import pyqtSignal,Qt
 import config
 
 reader_update_start      = load(lib,'reader_update_start'       ,(Reader,))
@@ -64,25 +64,25 @@ class Widget(QMainWindow):
 
   if not self.reader.is_open():
    return self.ui.statusbar.showMessage('Cannot open port')
-
+   
+  QApplication.setOverrideCursor(QCursor(Qt.WaitCursor)) 
   try:
    sn = ByteArray(8)()
    version = ByteArray(7)()
    ret = reader_get_sn(self.reader,sn),reader_get_version(self.reader,version)
    self.setWindowTitle('Reader %s:%s' % (sn,version.cast(c_char*7).raw))
+   self.ui.statusbar.showMessage('Port successfully opened')
   except IOError:
    self.ui.statusbar.showMessage('There is no reader at the other side')
-   del self.reader
-   return
+  finally:
+   QApplication.restoreOverrideCursor()
 
   self.set_buttons_enabled(False,True,True)
   self.ui.port.setEnabled(False)
-  self.ui.baud.setEnabled(False)
-  self.ui.statusbar.showMessage('Port successfully opened')
+  self.ui.baud.setEnabled(False)  
 
  def close_port(self):
-  self.reader.close()
-  self.reader = None
+  del self.reader
   self.set_buttons_enabled(True,False,False)
   self.ui.port.setEnabled(True)
   self.ui.baud.setEnabled(True)
