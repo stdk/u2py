@@ -21,9 +21,23 @@ class U2(Thread):
  def terminate(self):
   self.terminate_event.set()
 
-if __name__ == '__main__':
+def test_interface():
  test_files('test_*.py')
- u2 = U2()
- u2.start()
+
+def test_service(with_service = None):
+ if with_service == None: with_service = '+'
+ if with_service == '+':
+  u2 = U2()
+  u2.start()
  test_files('service_test_*.py')
- u2.terminate()
+ if with_service == '+':
+  u2.terminate()
+
+if __name__ == '__main__':
+ from sys import argv
+ tests = {'interface':test_interface,'service':test_service}
+ try:
+  tests[argv[1]](*argv[2:])
+ except (KeyError,IndexError):
+  [test() for test in tests.values()]
+
