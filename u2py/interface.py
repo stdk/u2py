@@ -147,7 +147,6 @@ class Reader(c_void_p):
   it gives WrongCardError when card serial number in fiels != given sn.
   '''
   if not self._is_open: self.open()
-  self.reset_field()
   return Card(self,scan = True,prev_sn = sn)
 
  def __del__(self):
@@ -206,6 +205,7 @@ class Card(Structure):
   if scan: self.scan(prev_sn)
 
  def scan(self, prev_sn = None):
+  self.reader.reset_field()
   if card_scan(self.reader,self): raise CardError()
   if prev_sn != None and self.sn.sn7() != prev_sn: raise WrongCardError()
 
