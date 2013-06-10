@@ -5,23 +5,27 @@ import sys
 sys.path.append('..')
 from u2py import interface
 
-class Reader(unittest.TestCase):
+class ReaderBase(unittest.TestCase):
  def setUp(self):
-  self.reader = interface.Reader(explicit_error = True)
+  reader_cfg = {'path': '\\\\.\\COM1', 'baud': 38400, 'impl':'asio' }
+  self.reader = interface.Reader(explicit_error = True,**reader_cfg)
 
  def tearDown(self):
   del self.reader
 
+class Reader(ReaderBase):
  def test_scan(self):
   card = self.reader.scan()
   self.assertIsInstance(card,interface.Card)
 
-class Card(unittest.TestCase):
+class Card(ReaderBase):
  def setUp(self):
-  self.card = interface.Reader(explicit_error = True).scan()
+  ReaderBase.setUp(self)
+  self.card = self.reader.scan()
 
  def tearDown(self):
   del self.card
+  ReaderBase.tearDown(self)
 
  def test_read_write(self):
   random_data = [random.randint(0,255) for i in range(interface.BLOCK_LENGTH*3)]
