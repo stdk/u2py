@@ -1,13 +1,13 @@
 ﻿import logging
 import logging.config
 
-VERSION = 1,5,11
+VERSION = 1,5,12
 
 lib_filename      = '../u2.dll'
 db_filename       = 'db.db3'
 
 reader_path       = [
-    {'path': '\\\\.\\COM2', 'baud': 38400, 'impl':'asio' }
+    {'path': '\\\\.\\COM1', 'baud': 38400, 'impl':'asio' }
 ]
 
 max_journeys = 50
