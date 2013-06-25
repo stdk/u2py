@@ -4,7 +4,7 @@ import config
 from u2py.config import VERSION
 from adbk.state import State
 
-class register_contract(APIHandler):
+class version(APIHandler):
  url = '/api/version'
 
  need_server = config.read_api_requires_server
