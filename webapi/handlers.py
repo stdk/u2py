@@ -16,6 +16,7 @@ import term
 import card_event
 import version
 import reader
+import notify
 
 class index(Handler):
  refill_journey_form = form.Form(
