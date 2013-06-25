@@ -138,7 +138,7 @@ class Reader(c_void_p):
   if reader_field_off(self) or reader_field_on(self):
    raise ReaderError()
 
- def scan(self, sn = None):
+ def scan(self, sn = None,lock = True):
   '''
   Resets reader field and returns Card object with information
   about card currently in field.
@@ -147,11 +147,11 @@ class Reader(c_void_p):
   it gives WrongCardError when card serial number in fiels != given sn.
   '''
   if not self._is_open: self.open()
-  return Card(self,scan = True,prev_sn = sn)
+  return Card(self,scan = True,prev_sn = sn, lock = lock)
 
- def __del__(self):
-  if DEBUG: print 'Reader.__del__',self
-  self.close()
+ #def __del__(self):
+ # if DEBUG: print 'Reader.__del__',self
+ # self.close()
 
  def __str__(self):
   return str(self.value)
@@ -196,13 +196,21 @@ class Card(Structure):
 
  def __del__(self):
   if DEBUG: print self.__class__.__name__,'__del__'
-  self.reader.lock.release()
+  if self.lock: self.reader.lock.release()
 
- def __init__(self, reader, scan = False, prev_sn = None):
+ def __init__(self, reader, scan = False, prev_sn = None, lock = True):
   if DEBUG: print self.__class__.__name__,'__init__'
   self.reader = reader
-  self.reader.lock.acquire()
+  self.lock = lock
+  if self.lock: self.reader.lock.acquire()
   if scan: self.scan(prev_sn)
+
+ def __enter__(self):
+  self.reader.lock.acquire()
+  return self
+
+ def __exit__(self,type, value, traceback):
+  self.reader.lock.release()
 
  def scan(self, prev_sn = None):
   self.reader.reset_field()
@@ -373,7 +381,7 @@ if __name__ == '__main__':
  import doctest
  doctest.testmod()
 
- reader = Reader()
+ #reader = Reader()
 
- print reader.sn()
- print reader.version()
+ #print reader.sn()
+ #print reader.version()
