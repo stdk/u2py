@@ -82,6 +82,7 @@ class Widget(QMainWindow):
   self.ui.baud.setEnabled(False)  
 
  def close_port(self):
+  self.reader.close()
   del self.reader
   self.set_buttons_enabled(True,False,False)
   self.ui.port.setEnabled(True)
