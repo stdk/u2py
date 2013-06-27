@@ -37,21 +37,18 @@ class Notification(object):
 
  @staticmethod
  def send_tcp(url,sn):
-  #print 'send_tcp',url,sn
   host,port = url.netloc.split(':')
   s = socket.create_connection((host,int(port)))
   s.send(str(sn))
 
  @staticmethod
  def send_udp(url,sn):
-  #print 'send_udp',url,sn
   host,port = url.netloc.split(':')
   s = socket.socket(AF_INET,SOCK_DGRAM)
   s.sendto(str(sn),(host,int(port)))
 
  @staticmethod
  def send_http(url,sn):
-  #print 'send_http',url,sn
   urlopen(url.geturl(),data = sn)
 
 class Notifier(object):
@@ -70,14 +67,15 @@ class Notifier(object):
 
  def remove_notification(self,reader_id,callback):
   del self.notifications[reader_id][callback]
+  if not len(self.notifications[reader_id]):
+   del self.notifications[reader_id]
 
  def run(self):
   while True:
-   #print self.notifications
    for reader_id,notifications in self.notifications.iteritems():
     try:
-     with APIHandler.readers[reader_id].scan(lock = False) as card:
-      #print card
+     with APIHandler.readers[reader_id] as reader:
+      card = reader.scan()
       [n.notify(self.pool,card.sn.sn7()) for n in notifications.values()]
     except IndexError:
      del self.notifications[reader_id]
