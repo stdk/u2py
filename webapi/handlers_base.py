@@ -46,22 +46,36 @@ class JsonError(Exception):
  def __init__(self,message):
   super(JsonError,self).__init__(message)
 
-def prepare_request(post_data,readers,required_args=None):
- if post_data == None: return {}
- try: request =  loads(post_data)
- except Exception as e: raise JsonError("{0}: {1}".format(e.__class__.__name__,e))
+def prepare_request(post_data, readers, args = None):
+ if post_data == None:
+  raise JsonError('No JSON request found')
 
- if required_args != None:
-  for arg in required_args:
+ try:
+  request = loads(post_data)
+ except Exception as e:
+  raise JsonError("{0}: {1}".format(e.__class__.__name__,e))
+
+ if args != None:
+  for arg in args.required:
    if arg not in request:
     raise MissingParameterError("Missing parameter: {0}".format(arg))
 
-  reader_id = request.get('reader',None)
-  request['reader'] = None if reader_id == None else readers[reader_id]
+  if 'reader' in request:
+   if 'reader' in args:
+    request['reader'] = readers[request['reader']]
+   else:
+    del request['reader']
 
  return request
 
-def api_callback(self,callback,required_args=None,post_data = None):
+class DummyReader(object):
+ def __enter__(self):
+  print 'dummy.__enter__'
+  return self
+ def __exit__(self,type,value,traceback):
+  print 'dummy.__exit__'
+
+def api_callback(self,callback,args = None,post_data = None):
  #currently, we allow api to be called crossdomain
  web.header('Access-Control-Allow-Origin','*')
  web.header('Content-Type','application/json; charset=utf-8')
@@ -74,9 +88,10 @@ def api_callback(self,callback,required_args=None,post_data = None):
   if self.need_server and not answer['is_server_present']:
    raise NoServerError('This operation requires vestibule server present')
 
-  request = prepare_request(post_data,self.readers,required_args)
+  request = prepare_request(post_data,self.readers,args)
 
-  callback(self,answer=answer,**request)
+  with request.get('reader',DummyReader()):
+   callback(self,answer=answer,**request)
  except MFEx as e:
   answer['error'] = e
  except Exception as e:
@@ -85,15 +100,26 @@ def api_callback(self,callback,required_args=None,post_data = None):
   answer['time_elapsed'] = clock() - clock_begin
  return answer
 
+class Args(object):
+ def __init__(self,callback):
+  argspec = getargspec(callback)
+  defaults = argspec.defaults or []
+  self.required = argspec.args[1:-len(defaults)]
+  self.defaults = argspec.args[-len(defaults):]
+  #answer keyword argument can be anywhere in argument list
+  self.defaults.remove('answer')
+
+ def __contains__(self,key):
+  return key in self.required or key in self.defaults
+
 def post_api(key,callback,name):
- argspec = getargspec(callback)
- required_args = argspec.args[1:-len(argspec.defaults or [])]
+ arguments = Args(callback)
 
  def wrapper(self,*args,**kw):
   post_data = web.data()
   logging.debug('{0}[{1}]->[{2}]'.format(key,name,post_data))
 
-  answer = api_callback(self,callback,required_args,post_data)
+  answer = api_callback(self,callback,arguments,post_data)
 
   response = dumps(answer,cls=APIEncoder)
   logging.debug('{0}[{1}]<-[{2}]'.format(key,name,response))
