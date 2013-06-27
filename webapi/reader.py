@@ -1,4 +1,6 @@
-﻿from handlers_base import APIHandler
+﻿from contextlib import closing
+
+from handlers_base import APIHandler
 import config
 
 from u2py.interface import Reader
@@ -23,20 +25,25 @@ class reader_detect(APIHandler):
  @staticmethod
  def identify_port(port):
   try:
-   reader = Reader(port,explicit_error = True)
-   version,sn = reader.version(),reader.sn()
-   return port,version,sn
+   with closing(Reader(port,explicit_error = True)) as reader:
+    return port,reader.version(),reader.sn()
   except (ReaderError,IOError):
    return None
 
  def POST(self, answer={}, **kw):
   from serial.tools import list_ports
 
-  [reader.close() for reader in APIHandler.readers]
+  backup_readers = APIHandler.readers
+  APIHandler.readers = []
+  for reader in backup_readers:
+   with reader as r:
+    r.close()
+
   readers = filter(lambda x:x,[self.identify_port('\\\\.\\' + com[0]) for com in list_ports.comports()])
   readers.sort(key = lambda (port,_1,_2): port)
   answer['readers'] = readers
   APIHandler.readers = [Reader(reader[0]) for reader in readers]
+  print APIHandler.readers
 
 class reader_save(APIHandler):
  url = '/api/reader/save'
