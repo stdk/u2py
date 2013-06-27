@@ -12,6 +12,8 @@ ULTRALIGHT = 0x44
 
 DEBUG = False
 
+DEFAULT_BAUD = 38400
+
 def ByteArray(obj,crc_LE = 1,cache = {},copy = False):
  if not isinstance(obj,int):
   obj_bytearray = cast(byref(obj),POINTER(ByteArray(sizeof(obj)))).contents
@@ -84,17 +86,26 @@ class Reader(c_void_p):
     kw = config.reader_path[0]
     path,baud,impl = kw['path'],kw['baud'],kw.get('impl','asio')
   self.path = path
-  self.baud = baud if baud != None else 38400
+  self.baud = baud if baud != None else DEFAULT_BAUD
   self.impl = impl if impl != None else 'asio'
 
   try:
    self.open()
   except ReaderError:
-   print 'Cannot open Reader on {0}. Will try to fix afterwards...'.format(self.path)
    if explicit_error: raise
+   print 'Cannot open Reader on {0}. Will try to fix afterwards...'.format(self.path)
 
  def is_open(self):
   return self._is_open
+
+ def __enter__(self):
+  print self,'__enter__'
+  self.lock.acquire()
+  return self
+
+ def __exit__(self,type, value, traceback):
+  print self,'__exit__'
+  self.lock.release()
 
  def open(self):
   'Opens reader on a given port and raises ReaderError otherwise.'
@@ -138,7 +149,7 @@ class Reader(c_void_p):
   if reader_field_off(self) or reader_field_on(self):
    raise ReaderError()
 
- def scan(self, sn = None,lock = True):
+ def scan(self, sn = None):
   '''
   Resets reader field and returns Card object with information
   about card currently in field.
@@ -147,14 +158,10 @@ class Reader(c_void_p):
   it gives WrongCardError when card serial number in fiels != given sn.
   '''
   if not self._is_open: self.open()
-  return Card(self,scan = True,prev_sn = sn, lock = lock)
-
- #def __del__(self):
- # if DEBUG: print 'Reader.__del__',self
- # self.close()
+  return Card(self,scan = True,prev_sn = sn)
 
  def __str__(self):
-  return str(self.value)
+  return '<%s>' % (self.value)
  __repr__ = __str__
 
 SN5 = ByteArray(5)
@@ -194,23 +201,10 @@ class Card(Structure):
   return '[{0}:{1}]'.format(self.type,self.sn)
  __repr__ = __str__
 
- def __del__(self):
-  if DEBUG: print self.__class__.__name__,'__del__'
-  if self.lock: self.reader.lock.release()
-
- def __init__(self, reader, scan = False, prev_sn = None, lock = True):
+ def __init__(self, reader, scan = False, prev_sn = None):
   if DEBUG: print self.__class__.__name__,'__init__'
   self.reader = reader
-  self.lock = lock
-  if self.lock: self.reader.lock.acquire()
   if scan: self.scan(prev_sn)
-
- def __enter__(self):
-  self.reader.lock.acquire()
-  return self
-
- def __exit__(self,type, value, traceback):
-  self.reader.lock.release()
 
  def scan(self, prev_sn = None):
   self.reader.reset_field()
@@ -252,9 +246,6 @@ class Sector(DumpableStructure):
     ('key',c_uint8),
     ('mode',c_uint8) # 0 for static authentication, 1 for dynamic authentication
  ]
-
- def __del__(self):
-  if DEBUG: print self.__class__.__name__,'__del__',self.num
 
  def __init__(self, card, num = 0, key = 0, enc = None,
               mode = None, method = None, blocks = (0,1,2)):
