@@ -11,6 +11,7 @@ class ReaderBase(unittest.TestCase):
   self.reader = interface.Reader(explicit_error = True,**reader_cfg)
 
  def tearDown(self):
+  self.reader.close()
   del self.reader
 
 class Reader(ReaderBase):
