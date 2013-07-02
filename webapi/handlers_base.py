@@ -70,10 +70,10 @@ def prepare_request(post_data, readers, args = None):
 
 class DummyReader(object):
  def __enter__(self):
-  print 'dummy.__enter__'
+  self.exc_info = (None,None,None)
   return self
  def __exit__(self,type,value,traceback):
-  print 'dummy.__exit__'
+  self.exc_info = (type,value,traceback)
 
 def api_callback(self,callback,args = None,post_data = None):
  #currently, we allow api to be called crossdomain
@@ -90,8 +90,20 @@ def api_callback(self,callback,args = None,post_data = None):
 
   request = prepare_request(post_data,self.readers,args)
 
-  with request.get('reader',DummyReader()):
-   callback(self,answer=answer,**request)
+  request['answer'] = answer
+  context = request.get('reader',DummyReader())
+
+  with context:
+   callback(self,**request)
+
+  if context.exc_info[0]:
+   import traceback
+   answer['error'] = {
+    'type': unicode(context.exc_info[0].__name__),
+    'message': str(context.exc_info[1]),
+    'traceback' : [s.rstrip('\n').decode('cp1251',errors='ignore') for s in traceback.format_exception(*context.exc_info)]
+   }
+
  except MFEx as e:
   answer['error'] = e
  except Exception as e:
