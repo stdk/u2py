@@ -11,16 +11,13 @@ IO_ERROR           = 0x0E000001
 def strParams(params):
  return '( {0} )'.format(', '.join( [str(param) for param in params] ))
 
-lock = Semaphore(1)
-
 def load(library,name,args,res = c_long):
  function = library[name]
  function.argtypes = args
  function.restype = res
  def wrapper(*params):
   begin_clock = clock()
-  #print 'interface_basis.lock.acquire',name
-  lock.acquire()
+
   try:
    ret = function(*params)
    time_elapsed = clock() - begin_clock
@@ -29,8 +26,6 @@ def load(library,name,args,res = c_long):
 
    return ret
   finally:
-   #print 'interface_basis.lock.release',name
-   lock.release()
 
    if ret >= IO_ERROR: #special case for unavailable reader
     #if some function returned IO_ERROR it means its first parameter
