@@ -68,10 +68,15 @@ def prepare_request(post_data, readers, args = None):
 
  return request
 
-class DummyReader(object):
+class ReaderlessContext(object):
  def __enter__(self):
   self.exc_info = (None,None,None)
   return self
+
+ def apply(self, callback, args, kwds):
+  with self:
+   return callback(*args,**kwds)
+
  def __exit__(self,type,value,traceback):
   self.exc_info = (type,value,traceback)
 
@@ -91,10 +96,9 @@ def api_callback(self,callback,args = None,post_data = None):
   request = prepare_request(post_data,self.readers,args)
 
   request['answer'] = answer
-  context = request.get('reader',DummyReader())
 
-  with context:
-   callback(self,**request)
+  context = request.get('reader',ReaderlessContext())
+  context.apply(callback, args = (self,), kwds = request)
 
   if context.exc_info[0]:
    import traceback
@@ -104,10 +108,10 @@ def api_callback(self,callback,args = None,post_data = None):
     'traceback' : [s.rstrip('\n').decode('cp1251',errors='ignore') for s in traceback.format_exception(*context.exc_info)]
    }
 
- except MFEx as e:
-  answer['error'] = e
- except Exception as e:
-  answer['error'] = { 'type': unicode(e.__class__.__name__), 'message': str(e) }
+ #except MFEx as e:
+ # answer['error'] = e
+ #except Exception as e:
+ # answer['error'] = { 'type': unicode(e.__class__.__name__), 'message': str(e) }
  finally:
   answer['time_elapsed'] = clock() - clock_begin
  return answer

@@ -4,7 +4,6 @@ from datetime import datetime,date
 from config import logging
 from copy import deepcopy
 from time import clock
-from threading import Semaphore
 
 IO_ERROR           = 0x0E000001
 

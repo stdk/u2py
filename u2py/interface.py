@@ -2,7 +2,8 @@ from interface_basis import load,DumpableStructure,DumpableBigEndianStructure,DA
 from ctypes import *
 from mfex import *
 import config
-from threading import Semaphore
+from gevent.threadpool import ThreadPool
+
 
 P = POINTER
 BLOCK_LENGTH = 16
@@ -80,7 +81,7 @@ class Reader(c_void_p):
   It will try to fix itself afterwards.
   To check current Reader status use 'is_open' method.
   '''
-  self.lock = Semaphore(1)
+  self.pool = ThreadPool(1)
   self._is_open = False
   if not path:
     kw = config.reader_path[0]
@@ -98,14 +99,22 @@ class Reader(c_void_p):
  def is_open(self):
   return self._is_open
 
+ @staticmethod
+ def execute_with_context(context, callback, args, kwds):
+  with context:
+   return callback(*args, **kwds)
+
+ def apply(self, callback, args, kwds):
+  return self.pool.apply(self.execute_with_context, args = (self,callback,args,kwds))
+
  def __enter__(self):
   self.exc_info = (None,None,None)
-  self.lock.acquire()
+  #self.lock.acquire()
   return self
 
  def __exit__(self, type, value, traceback):
   self.exc_info = (type,value,traceback)
-  self.lock.release()
+  #self.lock.release()
   return True
 
  def open(self):
