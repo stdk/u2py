@@ -4,11 +4,9 @@ from gevent.wsgi import WSGIServer
 import os
 import web
 import handlers
-from sys import stderr
 
-def run(ssl=None,logger='default'):
- from config import host,port,wsgi_log
- print handlers.urls
+def make_server(ssl = None):
+ from config import host,port
 
  web.config.debug = False
  web.internalerror = web.debugerror
@@ -22,4 +20,4 @@ def run(ssl=None,logger='default'):
 
  print 'Serving on {0}:{1}...'.format(host,port)
 
- WSGIServer((host, port), app, log = logger, **kw).serve_forever()
+ return WSGIServer((host, port), app, **kw)
