@@ -99,25 +99,24 @@ class Reader(c_void_p):
   return self._is_open
 
  def __enter__(self):
-  print self,'__enter__'
+  self.exc_info = (None,None,None)
   self.lock.acquire()
   return self
 
- def __exit__(self,type, value, traceback):
-  print self,'__exit__'
+ def __exit__(self, type, value, traceback):
+  self.exc_info = (type,value,traceback)
   self.lock.release()
+  return True
 
  def open(self):
   'Opens reader on a given port and raises ReaderError otherwise.'
   if DEBUG: print 'Reader.open',(self.path,self.baud,self.impl)
   if not self._is_open:
    if reader_open(self.path,self.baud,self.impl,self): raise ReaderError()
-   #print 'Reader.open success:',self
    self._is_open = True
 
  def close(self):
   'Closes current reader connection if it was open before.'
-  #print 'Reader.close',self._is_open
   if self._is_open:
    reader_close(self)
    self._is_open = False
