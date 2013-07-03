@@ -4,7 +4,6 @@ from mfex import *
 import config
 from gevent.threadpool import ThreadPool
 
-
 P = POINTER
 BLOCK_LENGTH = 16
 
@@ -104,7 +103,11 @@ class Reader(c_void_p):
   with context:
    return callback(*args, **kwds)
 
- def apply(self, callback, args, kwds):
+ def apply(self, callback, args = None, kwds = None):
+  if args == None:
+   args = ()
+  if kwds == None:
+   kwds = {}
   return self.pool.apply(self.execute_with_context, args = (self,callback,args,kwds))
 
  def __enter__(self):
