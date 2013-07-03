@@ -6,8 +6,8 @@ webapi.config.host = '127.0.0.1'
 webapi.config.port = 1000
 
 # Каталоги ресурсов веб-интерфейса
-webapi.config.templates_folder = 'webapi/templates'
-webapi.config.static_folder = 'webapi/static'
+webapi.config.templates_folder = 'templates'
+webapi.config.static_folder = 'static'
 
 # Настройки требовательности команд API к наличию сервера.
 # К командам чтения относятся: /api/scan и /api/term/available .
@@ -38,6 +38,7 @@ logging.config.dictConfig({
 # Настройки модуля работы с бесконтактными карточками
 import u2py.config
 
+# путь к определению интерфейса ПО для смены прошивки считывателя
 u2py.config.rewriter_ui_path = 'static/rewriter.ui'
 
 # Список системных адресов последовательных портов,
@@ -45,8 +46,7 @@ u2py.config.rewriter_ui_path = 'static/rewriter.ui'
 # Индекс считывателей в этом списке используется в дальнейшем для
 # указания считывателя для выполнения команды API
 u2py.config.reader_path     = [
-    #{'path': '\\\\.\\COM2', 'baud': 38400,  'impl': 'asio'},
-    {'path': 'test01.card', 'baud': 38400,  'impl': 'file'},
+    {'path': '\\\\.\\COM1', 'baud': 38400,  'impl': 'asio'},
 ]
 
 # Путь к библиотеке взаимодействия со считывателем
