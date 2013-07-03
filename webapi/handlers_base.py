@@ -5,6 +5,8 @@ if __name__ == '__main__':
 
 import config
 import web
+import traceback
+from sys import exc_info
 from json import JSONEncoder,dumps,loads
 from inspect import getargspec
 from sys import platform
@@ -68,6 +70,14 @@ def prepare_request(post_data, readers, args = None):
 
  return request
 
+def format_exception(type,value,tb):
+ return {
+    'type': str(type.__name__),
+    'message': str(value),
+    'traceback' : [s.rstrip('\n').decode('cp1251')
+                   for s in traceback.format_exception(type,value,tb)]
+ } if type != None else None
+
 class ReaderlessContext(object):
  def __enter__(self):
   self.exc_info = (None,None,None)
@@ -100,18 +110,9 @@ def api_callback(self,callback,args = None,post_data = None):
   context = request.get('reader',ReaderlessContext())
   context.apply(callback, args = (self,), kwds = request)
 
-  if context.exc_info[0]:
-   import traceback
-   answer['error'] = {
-    'type': unicode(context.exc_info[0].__name__),
-    'message': str(context.exc_info[1]),
-    'traceback' : [s.rstrip('\n').decode('cp1251',errors='ignore') for s in traceback.format_exception(*context.exc_info)]
-   }
-
- #except MFEx as e:
- # answer['error'] = e
- #except Exception as e:
- # answer['error'] = { 'type': unicode(e.__class__.__name__), 'message': str(e) }
+  answer['error'] = format_exception(*context.exc_info)
+ except Exception as e:
+  answer['error'] = format_exception(*exc_info())
  finally:
   answer['time_elapsed'] = clock() - clock_begin
  return answer
