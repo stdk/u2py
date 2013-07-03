@@ -36,8 +36,7 @@ class reader_detect(APIHandler):
   backup_readers = APIHandler.readers
   APIHandler.readers = []
   for reader in backup_readers:
-   with reader as r:
-    r.close()
+   reader.apply(lambda: reader.close())
 
   readers = filter(lambda x:x,[self.identify_port('\\\\.\\' + com[0]) for com in list_ports.comports()])
   readers.sort(key = lambda (port,_1,_2): port)
