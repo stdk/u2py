@@ -3,7 +3,8 @@ import config
 
 from socket import AF_INET,SOCK_DGRAM
 from gevent import spawn,sleep,socket
-from multiprocessing.pool import ThreadPool
+#from multiprocessing.pool import ThreadPool
+from gevent.threadpool import ThreadPool
 from urlparse import urlparse
 from urllib2 import urlopen
 
@@ -52,8 +53,8 @@ class Notification(object):
   urlopen(url.geturl(),data = sn)
 
 class Notifier(object):
- def __init__(self,poll_timeout = 1):
-  self.poll_timeout = poll_timeout
+ def __init__(self):
+  self.poll_timeout = config.notifier_poll_timeout
   self.notifications = {}
   self.pool = ThreadPool(5)
 
@@ -74,13 +75,14 @@ class Notifier(object):
   while True:
    for reader_id,notifications in self.notifications.iteritems():
     try:
-     with APIHandler.readers[reader_id] as reader:
-      card = reader.scan()
+     reader = APIHandler.readers[reader_id]
+     card = reader.apply(lambda reader: reader.scan(), args = (reader,) )
+     if card:
       [n.notify(self.pool,card.sn.sn7()) for n in notifications.values()]
+     else:
+      print reader.exc_info
     except IndexError:
      del self.notifications[reader_id]
-    except Exception as e:
-     print e.__class__.__name__,e
 
    sleep(self.poll_timeout)
 
