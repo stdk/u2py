@@ -112,12 +112,10 @@ class Reader(c_void_p):
 
  def __enter__(self):
   self.exc_info = (None,None,None)
-  #self.lock.acquire()
   return self
 
  def __exit__(self, type, value, traceback):
   self.exc_info = (type,value,traceback)
-  #self.lock.release()
   return True
 
  def open(self):
@@ -145,7 +143,7 @@ class Reader(c_void_p):
  def sn(self):
   sn = ByteArray(8)()
   if not self.is_open() or reader_get_sn(self,sn): raise ReaderError()
-  return sn
+  return str(sn)
 
  def save(self,path = None):
   if path == None: path = self.path
