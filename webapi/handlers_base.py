@@ -3,6 +3,7 @@ if __name__ == '__main__':
  import sys
  sys.path.append('../')
 
+
 import config
 import web
 import traceback
@@ -18,6 +19,8 @@ from u2py.config import logging,reader_path
 from u2py.mfex import MFEx
 from u2py.interface import Reader
 from adbk.state import State
+
+from reader_pool import ReaderWrapper
 
 class APIEncoder(JSONEncoder):
  def default(self, obj):
@@ -107,10 +110,21 @@ def api_callback(self,callback,args = None,post_data = None):
 
   request['answer'] = answer
 
-  context = request.get('reader',ReaderlessContext())
-  context.apply(callback, args = (self,), kwds = request)
+  reader = request.get('reader',None)
+  if reader == None:
+   context = ReaderlessContext()
+   context.apply(callback, args = (self,), kwds = request)
+   answer['error'] = format_exception(*context.exc_info)
+   return
 
-  answer['error'] = format_exception(*context.exc_info)
+  request['reader'] = None
+  handler_name = self.__class__.__name__
+  module_name = self.__class__.__module__
+  c = '.'.join([module_name,handler_name])
+  remote_answer = reader.apply(callback = c, request = request)
+  answer.update(remote_answer)
+
+  
  except Exception as e:
   answer['error'] = format_exception(*exc_info())
  finally:
@@ -155,6 +169,7 @@ class APIHandlerMetaClass(HandlerMetaClass):
  '''
  def __new__(cls,name,bases,attrs):
   api_decorators = { 'GET' : get_api, 'POST': post_api }
+  attrs['action'] = attrs.get('POST',None)
   [ attrs.__setitem__(key,api_decorators[key](key,attrs[key],name))
     for key in api_decorators.keys()
     if key in attrs ]
@@ -166,4 +181,5 @@ class APIHandler(Handler):
 
  need_server = config.read_api_requires_server
 
- readers = [Reader(**kw) for kw in reader_path]
+ #readers = [Reader(**kw) for kw in reader_path]
+ readers = [ReaderWrapper(**kw) for kw in reader_path]
