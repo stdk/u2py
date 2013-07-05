@@ -6,6 +6,8 @@ import config
 from u2py.interface import Reader
 from u2py.mfex import ReaderError
 
+from reader_pool import ReaderWrapper
+
 __all__ = ['reader_detect','reader_save','reader_load']
 
 class reader_detect(APIHandler):
@@ -36,12 +38,12 @@ class reader_detect(APIHandler):
   backup_readers = APIHandler.readers
   APIHandler.readers = []
   for reader in backup_readers:
-   reader.apply(lambda: reader.close())
+   reader.close()
 
   readers = filter(lambda x:x,[self.identify_port('\\\\.\\' + com[0]) for com in list_ports.comports()])
   readers.sort(key = lambda (port,_1,_2): port)
   answer['readers'] = readers
-  APIHandler.readers = [Reader(reader[0]) for reader in readers]
+  APIHandler.readers = [ReaderWrapper(reader[0]) for reader in readers]
   print APIHandler.readers
 
 class reader_save(APIHandler):
