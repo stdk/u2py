@@ -24,6 +24,8 @@ def remote_worker(connection,reader_kw):
  
  while True:
   callback,request = connection.recv()
+
+  if callback == 'close': break
   
   mod, cls = callback.rsplit('.', 1)
   mod = __import__(mod, None, None, [''])
@@ -39,6 +41,9 @@ def remote_worker(connection,reader_kw):
   request['answer']['process_time_elapsed'] = clock() - clock_begin
 
   connection.send(request['answer'])
+ 
+ print 'Reader',reader,'process closing'
+ reader.close()
 
 class ReaderWrapper(object):
  @staticmethod
@@ -46,11 +51,25 @@ class ReaderWrapper(object):
   connection.send([callback,request])
   return connection.recv()
 
- def apply(self, callback, request):
+ def apply(self, callback, args, kwds):
+  self.open()
+
+  kwds['reader'] = None
+  cls = type(args[0])
+  new_callback = '.'.join([cls.__module__,cls.__name__])
+  answer = self.thread_pool.apply(ReaderWrapper.local_worker, args = (self.connection, new_callback, kwds))
+  kwds['answer'].update(answer)
+
+ def open(self):
   if not self.started:
    self.process.start()
    self.started = True
-  return self.thread_pool.apply(ReaderWrapper.local_worker, args = (self.connection, callback, request))
+
+ def close(self):
+  if self.started:
+   self.connection.send(['close', None])
+   self.process.join()
+   self.started = False
 
  def __init__(self,**reader_kw):
   self.thread_pool = ThreadPool(1)

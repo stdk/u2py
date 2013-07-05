@@ -110,20 +110,10 @@ def api_callback(self,callback,args = None,post_data = None):
 
   request['answer'] = answer
 
-  reader = request.get('reader',None)
-  if reader == None:
-   context = ReaderlessContext()
-   context.apply(callback, args = (self,), kwds = request)
+  context = request.get('reader',ReaderlessContext())
+  context.apply(callback, args = (self,), kwds = request)
+  if hasattr(context,'exc_info'):
    answer['error'] = format_exception(*context.exc_info)
-   return
-
-  request['reader'] = None
-  handler_name = self.__class__.__name__
-  module_name = self.__class__.__module__
-  c = '.'.join([module_name,handler_name])
-  remote_answer = reader.apply(callback = c, request = request)
-  answer.update(remote_answer)
-
   
  except Exception as e:
   answer['error'] = format_exception(*exc_info())
