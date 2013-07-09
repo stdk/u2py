@@ -6,6 +6,21 @@ import os
 import web
 import handlers
 
+class Server(WSGIServer):
+ def serve_forever(self,*args,**kw):
+  from handlers_base import APIHandler
+  from process_reader import ProcessReader
+  from u2py.config import reader_path
+  try:
+   APIHandler.readers = [ProcessReader(**reader_kw) for reader_kw in reader_path]
+   [reader.open() for reader in APIHandler.readers]
+   WSGIServer.serve_forever(self,*args,**kw)
+  except KeyboardInterrupt:
+   pass
+  finally:
+   [reader.close() for reader in APIHandler.readers]
+
+
 def make_server(ssl = None):
  from config import host,port
 
@@ -21,4 +36,4 @@ def make_server(ssl = None):
 
  print 'Serving on {0}:{1}...'.format(host,port)
 
- return WSGIServer((host, port), app, **kw)
+ return Server((host, port), app, **kw)
