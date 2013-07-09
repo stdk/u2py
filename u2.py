@@ -1,3 +1,5 @@
+import multiprocessing
+
 def api():
  from webapi.server import make_server
  make_server().serve_forever()
@@ -11,6 +13,8 @@ def rewriter():
  rewriter.app()
 
 if __name__ == '__main__':
+ multiprocessing.freeze_support()
+
  exec(open('config.py').read())
 
  from sys import argv
