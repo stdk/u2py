@@ -15,6 +15,12 @@ webapi.config.static_folder = 'static'
 webapi.config.read_api_requires_server  = False
 webapi.config.write_api_requires_server = False
 
+# Интервал опроса считывателей модулем нотификации
+webapi.config.notifier_poll_timeout = 0.5
+
+# Выводить стек вызовов в числе данных о возникшей ошибке
+webapi.config.error_with_traceback = True
+
 # Настройки логирования
 import logging.config
 logging.config.dictConfig({
@@ -46,7 +52,7 @@ u2py.config.rewriter_ui_path = 'static/rewriter.ui'
 # Индекс считывателей в этом списке используется в дальнейшем для
 # указания считывателя для выполнения команды API
 u2py.config.reader_path     = [
-    {'path': '\\\\.\\COM1', 'baud': 38400,  'impl': 'asio'},
+    {'path': '\\\\.\\COM1', 'baud': 38400,  'impl': 'asio-mt'},
 ]
 
 # Путь к библиотеке взаимодействия со считывателем
