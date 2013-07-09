@@ -6,7 +6,7 @@ import config
 from u2py.interface import Reader
 from u2py.mfex import ReaderError
 
-from reader_pool import ReaderWrapper
+from process_reader import ProcessReader
 
 __all__ = ['reader_detect','reader_save','reader_load']
 
@@ -40,11 +40,12 @@ class reader_detect(APIHandler):
   for reader in backup_readers:
    reader.close()
 
-  readers = filter(lambda x:x,[self.identify_port('\\\\.\\' + com[0]) for com in list_ports.comports()])
-  readers.sort(key = lambda (port,_1,_2): port)
-  answer['readers'] = readers
-  APIHandler.readers = [ReaderWrapper(reader[0]) for reader in readers]
-  print APIHandler.readers
+  readers_info = filter(lambda x:x,[self.identify_port('\\\\.\\' + com[0])
+                                    for com in list_ports.comports()])
+  readers_info.sort(key = lambda (port,_1,_2): port)
+  answer['readers'] = readers_info
+  APIHandler.readers = [ProcessReader(path = path) for path,version,sn in readers_info]
+  [reader.open() for reader in APIHandler.readers]
 
 class reader_save(APIHandler):
  url = '/api/reader/save'
