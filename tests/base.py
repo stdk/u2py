@@ -6,6 +6,9 @@ import unittest
 DATE_FORMAT = '%d/%m/%y'
 TIME_FORMAT = '%H:%M:%S'
 
+HOST = '127.0.0.1'
+PORT = 1000
+
 class TestBase(unittest.TestCase):
  def send_command(self,api_url,request,error = None,check = True):
   '''
@@ -14,7 +17,7 @@ class TestBase(unittest.TestCase):
   json_request = json.dumps(request) if not isinstance(request,str) else request
   #print >> sys.stderr, api_url, json_request
 
-  f = urllib2.urlopen('http://127.0.0.1:1000' + api_url,data = json_request)
+  f = urllib2.urlopen('http://%s:%i%s' % (HOST,PORT,api_url),data = json_request)
 
   json_response = json.loads(f.read())
   #print >> sys.stderr, json.dumps(json_response,indent = 4)
