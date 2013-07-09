@@ -6,7 +6,6 @@ if __name__ == '__main__':
 
 import config
 import web
-import traceback
 from sys import exc_info
 from json import JSONEncoder,dumps,loads
 from inspect import getargspec
@@ -15,17 +14,8 @@ from sys import platform
 if platform == 'win32': from time import clock as clock
 if platform == 'linux2': from time import time as clock
 
-from u2py.config import logging,reader_path
-from u2py.mfex import MFEx
-from u2py.interface import Reader
+from u2py.config import logging
 from adbk.state import State
-
-from reader_pool import ReaderWrapper
-
-class APIEncoder(JSONEncoder):
- def default(self, obj):
-  'uses to_dict method as runtime interface for serializing to json'
-  return obj.to_dict() if hasattr(obj, 'to_dict') else str(obj)
 
 urls = []
 
@@ -39,10 +29,6 @@ class NoServerError(Exception):
  def __init__(self,message):
   super(NoServerError,self).__init__(message)
 
-class Handler(object):
- __metaclass__ = HandlerMetaClass
- templates = web.template.render(config.templates_folder.encode('cp1251'))
-
 class MissingParameterError(Exception):
  def __init__(self,message):
   super(MissingParameterError,self).__init__(message)
@@ -51,7 +37,56 @@ class JsonError(Exception):
  def __init__(self,message):
   super(JsonError,self).__init__(message)
 
-def prepare_request(post_data, readers, args = None):
+class Handler(object):
+ __metaclass__ = HandlerMetaClass
+ templates = web.template.render(config.templates_folder.encode('cp1251'))
+
+def format_exception(type,value,tb):
+ if type != None:
+  result = {
+    'type': str(type.__name__),
+    'message': str(value)
+  }
+  if config.error_with_traceback:
+   import traceback
+   result['traceback'] = [s.rstrip('\n').decode('cp1251')
+                          for s in traceback.format_exception(type,value,tb)]
+  return result
+
+def parse_post_data(post_data, readers, args = None):
+ '''
+  Return value: (context manager, request dictionary)
+  Request parsing, argument presence check and context deducing are done here.
+  Parsing: json.loads with JsonError when there is no data to parse or given
+ data is not a json.
+  Argument check: if |args| parameter is not None, then we assume it contains
+ an instance of Args class with overloaded __contains__ method and 2 attributes:
+ |required| and |defaults| that specify list of parameter names which are essential
+ or optional for this method respectively. MissingParameterError will be raised
+ when there is no essential paramter present in request.
+  Context deducing. There are 2 types of context: reader and readerless.
+ Reader context.
+ Any api call that requires exactly one reader and doesn't interferes
+ with others during its work should specify |reader| parameter as non-default
+ within its argument list. Then, if |reader| key is present among request keys
+ appropriate reader from |readers| should be returned as context manager for this
+ request. Methods must be aware of the fact they'll be executed in another
+ process should they conform to its requirements. There are methods which explicitly
+ avoid being executed in another process despite accepting |reader| argument
+ due to their purpose (e.g. /api/scan/notify). They do it by discarding |reader|
+ from argument list and accept it from keyword arguments of its call.
+ Some api calls behave differently according to the presence of |reader| key
+ in request (e.g. /api/version). Specifically for them, None value of |reader| key
+ is identical to the absence of |reader| key.
+ Readerless context.
+ When conditions of using reader context aren't met, readerless context comes to
+ the rescue. As its name suggests, it doesn't belong to any specific reader
+ and thus executes in the same process. "Doesn't belong to any specific reader"
+ doesn't means it cannot work with any reader at all - it's just says that api call
+ performs some general work that cannot be identified with only one reader and thus
+ shouldn't be redirected to reader process. (notifications and reader detection
+ are examples of such work).
+ '''
  if post_data == None:
   raise JsonError('No JSON request found')
 
@@ -65,21 +100,11 @@ def prepare_request(post_data, readers, args = None):
    if arg not in request:
     raise MissingParameterError("Missing parameter: {0}".format(arg))
 
-  if 'reader' in request:
+  if 'reader' in request and request['reader'] != None:
    if 'reader' in args:
-    request['reader'] = readers[request['reader']]
-   else:
-    del request['reader']
+    return readers[request['reader']],request
 
- return request
-
-def format_exception(type,value,tb):
- return {
-    'type': str(type.__name__),
-    'message': str(value),
-    'traceback' : [s.rstrip('\n').decode('cp1251')
-                   for s in traceback.format_exception(type,value,tb)]
- } if type != None else None
+ return ReaderlessContext(),request
 
 class ReaderlessContext(object):
  def __enter__(self):
@@ -106,15 +131,13 @@ def api_callback(self,callback,args = None,post_data = None):
   if self.need_server and not answer['is_server_present']:
    raise NoServerError('This operation requires vestibule server present')
 
-  request = prepare_request(post_data,self.readers,args)
-
+  context,request = parse_post_data(post_data, self.readers, args)
   request['answer'] = answer
 
-  context = request.get('reader',ReaderlessContext())
   context.apply(callback, args = (self,), kwds = request)
   if hasattr(context,'exc_info'):
    answer['error'] = format_exception(*context.exc_info)
-  
+
  except Exception as e:
   answer['error'] = format_exception(*exc_info())
  finally:
@@ -142,7 +165,8 @@ def post_api(key,callback,name):
 
   answer = api_callback(self,callback,arguments,post_data)
 
-  response = dumps(answer,cls=APIEncoder)
+  json_default = lambda obj: obj.to_dict() if hasattr(obj, 'to_dict') else str(obj)
+  response = dumps(answer,default = json_default)
   logging.debug('{0}[{1}]<-[{2}]'.format(key,name,response))
   return response
  return wrapper
@@ -171,5 +195,4 @@ class APIHandler(Handler):
 
  need_server = config.read_api_requires_server
 
- #readers = [Reader(**kw) for kw in reader_path]
- readers = [ReaderWrapper(**kw) for kw in reader_path]
+ readers = []
