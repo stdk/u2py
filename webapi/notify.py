@@ -1,9 +1,9 @@
 ﻿from handlers_base import APIHandler
 import config
+from json import dumps
 
 from socket import AF_INET,SOCK_DGRAM
 from gevent import spawn,sleep,socket
-#from multiprocessing.pool import ThreadPool
 from gevent.threadpool import ThreadPool
 from urlparse import urlparse
 from urllib2 import urlopen
@@ -25,32 +25,33 @@ class Notification(object):
     'http': Notification.send_http
   })
 
- def parse_callback(self,callback,senders):
+ def parse_callback(self, callback, senders):
   try:
    self.url = urlparse(callback)
    self.sender = senders[self.url.scheme]
   except IndexError: raise UnsupportedProtocolError()
   except ValueError: raise IncorrectCallbackError()
 
- def notify(self,pool,sn):
+ def notify(self, pool, sn, **kw):
   if self.sn != None and self.sn != sn: return
-  pool.apply_async(self.sender,args =(self.url,str(sn)))
+  kw['sn'] = sn
+  pool.apply_async(self.sender,args = (self.url,dumps(kw)) )
 
  @staticmethod
- def send_tcp(url,sn):
+ def send_tcp(url, data):
   host,port = url.netloc.split(':')
   s = socket.create_connection((host,int(port)))
-  s.send(str(sn))
+  s.send(data + '\n')
 
  @staticmethod
- def send_udp(url,sn):
+ def send_udp(url, data):
   host,port = url.netloc.split(':')
   s = socket.socket(AF_INET,SOCK_DGRAM)
-  s.sendto(str(sn),(host,int(port)))
+  s.sendto(data + '\n',(host,int(port)))
 
  @staticmethod
- def send_http(url,sn):
-  urlopen(url.geturl(),data = sn)
+ def send_http(url, data):
+  urlopen(url.geturl(),data = data + '\n')
 
 class Notifier(object):
  def __init__(self):
@@ -73,14 +74,18 @@ class Notifier(object):
 
  def run(self):
   while True:
-   for reader_id,notifications in self.notifications.iteritems():
+   #print self.notifications
+   for reader_id in self.notifications.keys():
     try:
      reader = APIHandler.readers[reader_id]
-     card = reader.apply(lambda reader: reader.scan(), args = (reader,) )
-     if card:
-      [n.notify(self.pool,card.sn.sn7()) for n in notifications.values()]
+     answer = reader.apply('webapi.scan.scan',kwds = {'fast': True})
+     sn = answer.get('sn',None)
+     if sn:
+      notifiers = self.notifications.get(reader_id,{})
+      [n.notify(self.pool, sn = sn, reader = reader_id)
+       for n in notifiers.values()]
      else:
-      print reader.exc_info
+      print answer['error']
     except IndexError:
      del self.notifications[reader_id]
 
@@ -97,7 +102,10 @@ class scan_notify(APIHandler):
  def GET(self,answer={}):
   answer.update({
    'request': {
-    'reader'  : 'число, индекс считывателя бесконтактных карточек',
+    'reader'  : [
+     'опциональный параметр; число, индекс считывателя бесконтактных карточек.',
+     'В случае отсутствия этого параметра, нотификация будет установлена для всех считывателей в системе'
+    ],
     'sn'      : 'опциональный параметр; cерийный номер требуемой бесконтактной карточки, число',
     'action'  : 'строка, действие над нотификацией (add/remove)',
     'callback': 'строка, адрес обратного вызова в виде URL',
@@ -107,9 +115,9 @@ class scan_notify(APIHandler):
    }
   })
 
- def POST(self, reader, action, callback, sn = None, answer = {}, **kw):
-  reader_id = self.readers.index(reader)
+ def POST(self, action, callback, sn = None, answer = {}, **kw):
+  ids = [kw['reader']] if 'reader' in kw else range(len(APIHandler.readers))
   if action == 'add':
-   self.notifier.add_notification(reader_id, callback = callback, sn = sn)
+   [self.notifier.add_notification(r, callback = callback, sn = sn) for r in ids]
   if action == 'remove':
-   self.notifier.remove_notification(reader_id,callback = callback)
+   [self.notifier.remove_notification(r, callback = callback) for r in ids]
