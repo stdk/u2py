@@ -1,7 +1,7 @@
 ﻿from ctypes import c_long,c_uint16,memmove,addressof,sizeof
 from ctypes import Structure,BigEndianStructure
 from datetime import datetime,date
-from config import logging
+from config import logging,reopen_on_io_error
 from copy import deepcopy
 from time import clock
 
@@ -26,7 +26,7 @@ def load(library,name,args,res = c_long):
    return ret
   finally:
 
-   if ret >= IO_ERROR: #special case for unavailable reader
+   if reopen_on_io_error and ret == IO_ERROR: #special case for unavailable reader
     #if some function returned IO_ERROR it means its first parameter
     #belongs to Reader class -> should be reopened
     try: params[0].reopen()
