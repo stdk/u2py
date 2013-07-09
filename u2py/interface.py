@@ -84,10 +84,10 @@ class Reader(c_void_p):
   self._is_open = False
   if not path:
     kw = config.reader_path[0]
-    path,baud,impl = kw['path'],kw['baud'],kw.get('impl','asio')
+    path,baud,impl = kw['path'],kw['baud'],kw.get('impl','asio-mt')
   self.path = path
   self.baud = baud if baud != None else DEFAULT_BAUD
-  self.impl = impl if impl != None else 'asio'
+  self.impl = impl if impl != None else 'asio-mt'
 
   try:
    self.open()
@@ -155,7 +155,8 @@ class Reader(c_void_p):
 
  def reset_field(self):
   if not self.is_open(): raise ReaderError()
-  if reader_field_off(self) or reader_field_on(self):
+  #if reader_field_off(self) or reader_field_on(self):
+  if reader_field_on(self):
    raise ReaderError()
 
  def scan(self, sn = None):
@@ -235,7 +236,6 @@ class Card(Structure):
 
  def mfplus_personalize(self):
   ret = card_mfplus_personalize(self.reader,self)
-  print ret
   if ret: raise MFPlusError('Cannot personalize this card')
 
 class Sector(DumpableStructure):
