@@ -1,14 +1,18 @@
 from interface import DumpableStructure,ByteArray,Reader
 from mfex import *
 from ctypes import Structure,memmove,addressof,sizeof,cast,pointer as p,POINTER as P
+import logging
 
 class DYNAMIC_A(DumpableStructure):
  _fields_ = [('b1',ByteArray(16)),
              ('b2',ByteArray(16))]
 
+ def __str__(self):
+  return '{0}+{1}'.format(self.b1,self.b2)
+
  def __init__(self,cls):
-  dynamic = cast(p(cls()),P(ByteArray(sizeof(cls)))).contents
-  self.b1,self.b2 = dynamic,dynamic
+  data = ByteArray(cls())
+  self.b1,self.b2 = data,data
 
  def commit(self,data,low_endian=1):
   '''
@@ -25,32 +29,43 @@ class DYNAMIC_A(DumpableStructure):
   memmove(dst2,dst1,size)
 
  @classmethod
- def validate(cls,sector,dynamic_class):
+ def validate(cls, data, dynamic_class, callback):
   '''
-  Unlike other validate methods, this one requires two arguments instead of one:
-  both `sector` and `dynamic data` (instead of jsut simple ByteArray)
-  are required for successfull check and restoration of possible failed blocks.
-  When there is no way to restore dynamic data for given dynamic_class this function
-  throws CRCError.
-  To make fail block restore operation successfull, sector should be authenticated,
+  Return value: (DYNAMIC_A instance, dynamic_class instance from given data)
+  Possible exceptions: CRCError when there is no way to restore dynamic data.
+
+  Unlike other validate methods, this one requires at least three arguments instead of one:
+  `data`, `dynamic class` and `callback` are required for successfull check and
+  restoration of possible failed blocks. Unlike first two arguments, `callback`
+  requires some clarification: this paramter should contain callable that accepts
+  integer number (0 or 1), treats this number as index of failed block in DYNAMIC_A
+  reference system and reacts accordingly. This `callback` will only be called
+  in case failed block is actually present within data.
+  Usually, callback should contain something like `sector.write_block(fail_block + block_diff)`.
+  Thus, to make fail block restore operation successfull, sector should be authenticated,
   i.e. there should be no other auth operations on this card before validating.
-  Returns tuple of DYNAMIC_A object and dynamic_class object retrieved from sector data.
   '''
-  proxy = sector.data.cast(cls)
-  try:
-   fail_block = proxy.restore(dynamic_class)
-   if fail_block: sector.write_block(fail_block)
-  except CRCError: raise CRCError(sector.num)
-  return proxy,proxy.b1.cast(dynamic_class)
+  proxy = data.cast(cls)
+  dynamic_class_instance = proxy.restore(dynamic_class, callback)
+  return proxy, dynamic_class_instance
 
- def __str__(self):
-  return '{0}+{1}'.format(self.b1,self.b2)
-
- def restore(self,dynamic_class):
+ def restore(self, dynamic_class, callback):
   '''
-  Return value: index of restored block or None, if there is no need to restore anything.
+  Return value: dynamic_class instance from its own data
+  For everything else see DYNAMIC_A.validate.
+  This is instanced version of the same functionality.
+  '''
+  fail_block = self.amend_fail_block(dynamic_class)
+  if fail_block != None:
+   logging.debug('restoring fail block[%i]' % (fail_block,))
+   callback(fail_block)
+  return self.b1.cast(dynamic_class)
 
-  This functions tries to restore dynamic contract part with given business-logic:
+ def amend_fail_block(self,dynamic_class):
+  '''
+  Return value: index of in-memory restored block or None, if everything is ok.
+
+  This functions tries to restore dynamic contract part in memory with given business-logic:
   1. Validate block1 and block2 of dynamic part and find out its status (correct,incorrect).
   2. If there is no correct blocks, raise CRCError.
   3. If both blocks are correct and their contents are the same, return None.
@@ -69,11 +84,9 @@ class DYNAMIC_A(DumpableStructure):
   def get(block):
    try: return dynamic_class.validate(block)
    except MFEx as e:
-    print e.__class__.__name__,e
     return None
 
   a, b = get(self.b1), get(self.b2)
-  #print not not a, not not b
 
   if not a and not b:
    raise CRCError()
@@ -82,9 +95,9 @@ class DYNAMIC_A(DumpableStructure):
    return None
 
   if a and (not b or a < b):
-   ret,src,dst = 2,self.b1,self.b2
+   ret,src,dst = 1,self.b1,self.b2
   else:
-   ret,src,dst = 1,self.b2,self.b1
+   ret,src,dst = 0,self.b2,self.b1
 
   src.copy(dst = dst)
   return ret
@@ -94,8 +107,7 @@ class CONTRACT_A(DumpableStructure):
             ('dynamic_part',DYNAMIC_A)]
 
  def __init__(self,static_class,dynamic_class):
-  static = cast(p(static_class()),P(ByteArray(sizeof(static_class)))).contents
-  self.static_block = static
+  self.static_block = ByteArray(static_class())
   self.dynamic_part.__init__(dynamic_class)
 
  def commit(self,low_endian=1):
@@ -112,11 +124,14 @@ class CONTRACT_A(DumpableStructure):
    e.data1,e.data2 = sector.num,1
    raise
 
-  try:
-   fail_block = contract.dynamic_part.restore(dynamic_class)
-   if fail_block: sector.write_block(fail_block)
-  except CRCError: raise CRCError(sector.num)
+  def restore_callback(fail_block):
+   print 'CONTRACT_A restore_callback sector[%i] block[%i]' %(sector.num,fail_block + 1)
+   sector.write_block(fail_block + 1)
 
-  contract.dynamic = contract.dynamic_part.b1.cast(dynamic_class)
+  try:
+   contract.dynamic = contract.dynamic_part.restore(dynamic_class,
+                                                    callback = restore_callback)
+  except CRCError:
+   raise CRCError(sector.num,2)
 
   return contract
