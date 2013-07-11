@@ -297,7 +297,7 @@ class Sector(DumpableStructure):
   self.mode = {'static': 0, 'dynamic' : 1}[mode]
 
  def write_block(self,i,enc = None):
-  if not enc: enc = self.enc[i]
+  if not enc: enc = self.enc[i] if isinstance(self,ByBlockSector) else self.enc
   if card_block_write(self.card.reader,self,i,enc): raise SectorWriteError(self.num,i)
 
  def set_trailer(self,key,mode=None):
