@@ -24,6 +24,9 @@ def load(library,name,args,res = c_long):
    logging.debug(' | '.join( ["%6.4f" % (time_elapsed),name,strParams(params),hex(ret)] ))
 
    return ret
+  except Exception:
+   import sys
+   print name,sys.exc_info()
   finally:
 
    if reopen_on_io_error and ret == IO_ERROR: #special case for unavailable reader
