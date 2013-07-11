@@ -246,13 +246,19 @@ class TERM_STATIC(DumpableStructure):
   }
 
 def read_static(card):
- sector = card.sector(num=STATIC,key=KEY,enc=ENC,mode='dynamic',method='full')
+ sector = card.sector(num=STATIC,key=KEY,mode='dynamic',method='full',enc=ENC)
  static = TERM_STATIC.validate(sector.data)
  return sector,static
 
 def read_dynamic(card):
- sector = card.sector(num=DYNAMIC,key=KEY,mode='dynamic',method='by-blocks')
- dyn_proxy,dyn_data = DYNAMIC_A.validate(sector,TERM_DYNAMIC)
+ sector = card.sector(num=DYNAMIC,key=KEY,mode='dynamic',method='full')
+
+ def restore_callback(fail_block):
+  print 'term.read_dynamic.restore_callback',fail_block
+  return sector.write_block(fail_block)
+
+ dyn_proxy,dyn_data = DYNAMIC_A.validate(sector.data,TERM_DYNAMIC,
+                                         callback = restore_callback)
  return sector,dyn_proxy,dyn_data
 
 def read(card):
