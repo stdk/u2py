@@ -126,12 +126,12 @@ class PROPRIETOR_ASPP_SECTOR1_DATA(DumpableBigEndianStructure):
   return data.cast(cls)
 
 def read(card):
- sector = card.sector(num = 12, key = 9)
- contract = CONTRACT_A.validate(sector,CONTRACT0_STATIC, CONTRACT0_DYNAMIC)
+ sector = card.sector(num = 12, key = 9, method = 'full')
+ contract = CONTRACT_A.validate(sector, CONTRACT0_STATIC, CONTRACT0_DYNAMIC)
  return contract.static.to_dict()
 
 def read_personal_info(card):
- personal_sector1 = card.sector(num = 6, key = 21)
+ personal_sector1 = card.sector(num = 6, key = 21, method = 'full')
  return PROPRIETOR_ASPP_SECTOR1_DATA.validate(personal_sector1.data)
  return result.to_dict()
 
