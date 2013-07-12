@@ -1,4 +1,4 @@
-from interface import lib,load,DumpableStructure,DATE,TIME
+from interface import lib,load,DumpableStructure,DATE,TIME,ByteArray
 from contract import DYNAMIC_A
 from events import EVENT_CONTRACT_ADD2,EVENT_CONTRACT
 from config import term_full_cost,term_half_cost,hall_id
@@ -89,7 +89,10 @@ class TERM_DYNAMIC(DumpableStructure):
  def __init__(self):
   self.update()
 
- def to_dict(self):
+ def update_checksum(self):
+  ByteArray(self).crc16_calc(low_endian = 1)
+
+ def to_dict(self,deep = None):
   return {
    'validated_date': DATE(uint16=self.validated_date),
    'validated_time': TIME(uint16=self.validated_time),
@@ -101,6 +104,7 @@ class TERM_DYNAMIC(DumpableStructure):
   self.transaction += 1
   self.validated_date = DATE().to_int()
   self.validated_time = TIME().to_int()
+  self.update_checksum()
   return self.transaction
 
  @classmethod
@@ -293,7 +297,7 @@ def refill(card,amount):
  events.append(refill_event)
 
  try:
-  dyn_proxy.commit(dyn_data,low_endian=1)
+  dyn_proxy.commit(dyn_data,low_endian = 1)
   dyn_sector.write()
 
   card.auth(static_sector)
@@ -314,39 +318,65 @@ class TERM_INIT(DumpableStructure):
     ('limit' ,DATE),
  ]
 
- def __init__(self,**kw):
-  [setattr(self,key,kw[key]) for key in [a for a,b in self._fields_] if key in kw]
+ STATUS_INACTIVE = 2
 
-def init(card,aid,pix):
- cost,(begin,end) = available_refill(aid,pix)
- limit = datetime.now() + timedelta(days=365,hours=6) * 5 # + 5 years from now
+ def __init__(self,aid,pix):
+  self.status = self.STATUS_INACTIVE
+  self.aid = aid
+  self.pix = pix
 
- term_init_args = TERM_INIT(status = 2,aid = aid,pix = pix)
- term_init_args.begin = DATE(date = begin)
- term_init_args.end = DATE(date = end)
- term_init_args.limit = DATE(date = limit)
+  cost,(begin,end) = available_refill(aid,pix)
+  self.begin = DATE(date = begin)
+  self.end = DATE(date = end)
+  # + 5 years from now
+  self.limit = DATE(date = datetime.now() + timedelta(days=365,hours=6) * 5)
 
- static = TERM_STATIC()
- term_init(p(static),p(term_init_args))
+def init(card,aid,pix,deposit):
+ from transport_card import validate,set_deposit,register_contract,clear
 
- sector = card.sector(num=STATIC,key=0,enc=ENC,method='full',read=False)
- sector.data = cast(p(static),P(ByteArray(sizeof(static)))).contents
+ validate(card)
+ set_deposit(card,deposit)
 
- sector.write()
- sector.set_trailer(KEY,mode='dynamic')
+ clear(card,[(STATIC,KEY,'dynamic'),(DYNAMIC,KEY,'dynamic')])
 
- print static
+ static_sector = card.sector(num = STATIC, key = 0, enc = ENC,
+                             method = 'full', read = False)
+ term_init(p(static_sector.data),p(TERM_INIT(aid,pix)))
+ static_sector.data.crc16_calc(low_endian = 1)
+
+ event = EVENT_CONTRACT(card,AID = aid,PIX = pix)
+ try:
+  static_sector.write()
+  static_sector.set_trailer(KEY, mode = 'dynamic')
+
+  dynamic_sector = card.sector(num = DYNAMIC, key = 0, enc = 0xFF,
+                               method = 'full', read = False)
+  dynamic_sector.data.cast(DYNAMIC_A).__init__(TERM_DYNAMIC)
+  dynamic_sector.write()
+  dynamic_sector.set_trailer(KEY, mode = 'dynamic')
+
+  register_contract(card,STATIC,aid,pix)
+ except Exception as e: event.set_error_code(e); raise
+ finally: event.save(card)
+
+def remove(card):
+ from transport_card import validate,set_deposit,register_contract,clear
+
+ validate(card)
+ clear(card,[(STATIC,KEY,'dynamic'),(DYNAMIC,KEY,'dynamic')])
+ register_contract(card,STATIC,0,0)
+ set_deposit(card,0)
 
 def test():
  from interface import Reader
  import transport_card
  card = Reader().scan()
 
- transport_card.validate(card=card)
+ #stransport_card.validate(card=card)
 
- print read(card)
+ #print read(card)
 
- #init(card,0xD01,0x30C)
+ init(card,0xD01,0x30C, 700)
 
 def test_available():
  from interface import Reader
@@ -367,15 +397,13 @@ def test_available():
 
 if __name__ == '__main__':
  #test_available()
- #test()
- x = PACK_A()
- x.priority = 0xFFFF
- x.place = 0xFFFF
- x.sn = 0xFFFF
- x.sale_aid = 0xFFFF
- x.device_number = 0xFFFF
-
- print x
+ test()
+ #x = PACK_A()
+ #x.priority = 0xFFFF
+ #x.place = 0xFFFF
+ #x.sn = 0xFFFF
+ #x.sale_aid = 0xFFFF
+ #x.device_number = 0xFFFF
 
 
 

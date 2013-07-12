@@ -132,3 +132,57 @@ class term_available(APIHandler):
     STANDARD   : self.handle_standard,
     ULTRALIGHT : self.handle_ultralight
    }.get(card.type,handle_unknown)(card,answer)
+
+class term_init(APIHandler):
+ url = '/api/term/init'
+
+ need_server = config.write_api_requires_server
+
+ def GET(self,answer={}):
+  answer.update({
+    'request': {
+        'reader' : 'число, индекс считывателя бесконтактных карточек',
+        'aidpix' : 'опциональный параметр, число: AIDPIX инициализируемого контракта (0xD0130C -> 13636364)',
+        'deposit': 'опциональный параметр, число: залоговая стоимость контракта',
+        'sn'     : 'опциональный параметр, число: cерийный номер требуемой бесконтактной карточки',
+    },
+    'response': {
+        'sn': 'Серийный номер бесконтактной карточки, число',
+        'aspp': 'АСПП номер транспортной карточки вида 0000000000000000, строка',
+        "error": 'Информация об ошибке, возникшей при выполнении вызова API.',
+    }
+  })
+
+ def POST(self, reader, deposit = None, aidpix = 0xD0130C , sn = None, answer={}, **kw):
+  card = reader.scan(sn)
+  answer['sn'] = card.sn.sn7()
+
+  term.init(card, (aidpix >> 12), aidpix & 0xFFF, deposit)
+
+  answer['aspp'] = str(card.aspp)
+
+class term_remove(APIHandler):
+ url = '/api/term/remove'
+
+ need_server = config.write_api_requires_server
+
+ def GET(self,answer={}):
+  answer.update({
+    'request': {
+        'reader' : 'число, индекс считывателя бесконтактных карточек',
+        'sn'     : 'опциональный параметр; cерийный номер требуемой бесконтактной карточки, число',
+    },
+    'response': {
+        'sn': 'Серийный номер бесконтактной карточки, число',
+        'aspp': 'АСПП номер транспортной карточки вида 0000000000000000, строка',
+        "error": 'Информация об ошибке, возникшей при выполнении вызова API.',
+    }
+  })
+
+ def POST(self, reader, sn = None, answer={}, **kw):
+  card = reader.scan(sn)
+  answer['sn'] = card.sn.sn7()
+
+  term.remove(card)
+
+  answer['aspp'] = str(card.aspp)
