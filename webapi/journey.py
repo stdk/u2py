@@ -67,7 +67,7 @@ class journey_init(APIHandler):
     }
   })
 
- def POST(self, reader, deposit = None, sn = None, answer={}, fast=False, **kw):
+ def POST(self, reader, deposit = None, sn = None, answer={}, **kw):
   card = reader.scan(sn)
   answer['sn'] = card.sn.sn7()
 
@@ -93,7 +93,7 @@ class journey_remove(APIHandler):
     }
   })
 
- def POST(self, reader, sn = None, answer={}, fast=False, **kw):
+ def POST(self, reader, sn = None, answer={}, **kw):
   card = reader.scan(sn)
   answer['sn'] = card.sn.sn7()
 
