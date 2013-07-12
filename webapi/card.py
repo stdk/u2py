@@ -48,7 +48,10 @@ class card_clear(APIHandler):
   card = reader.scan(sn)
   answer['sn'] = card.sn.sn7()
   s = 'static'
-  sectors = [(1,2,s),(2,3,s),(3,7,s),(4,7,s),(5,6,s),(9,4,s),(10,5,s),(11,8,s)]
+  d = 'dynamic'
+  sectors = [(1, 2,s),( 2,3,s),( 3,7,s),( 4,7,s),
+             (5, 6,s),( 9,4,s),(10,5,s),(11,8,s),
+             (6,21,s),(12,9,s),(13,27,d),(14,27,d)]
   transport_card.clear(card,sectors)
 
 class card_plus_perso(APIHandler):
