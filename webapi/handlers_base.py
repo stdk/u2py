@@ -183,8 +183,9 @@ class APIHandlerMetaClass(HandlerMetaClass):
  This metaclass imposes additional requirements on a GET and POST methods of a class its applied to.
  '''
  def __new__(cls,name,bases,attrs):
-  api_decorators = { 'GET' : get_api, 'POST': post_api }
   attrs['action'] = attrs.get('POST',None)
+
+  api_decorators = { 'GET' : get_api, 'POST': post_api }
   [ attrs.__setitem__(key,api_decorators[key](key,attrs[key],name))
     for key in api_decorators.keys()
     if key in attrs ]
