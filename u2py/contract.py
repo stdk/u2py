@@ -10,7 +10,7 @@ class DYNAMIC_A(DumpableStructure):
  def __str__(self):
   return '{0}+{1}'.format(self.b1,self.b2)
 
- def __init__(self,cls):
+ def __init__(self, cls):
   data = ByteArray(cls())
   self.b1,self.b2 = data,data
 
