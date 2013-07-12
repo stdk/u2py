@@ -173,8 +173,9 @@ def post_api(key,callback,name):
 
 def get_api(key,callback,name):
  def  wrapper(self,*args,**kw):
-  answer = api_callback(self,callback)
-  return dumps(answer,cls=APIEncoder)
+  answer = {}
+  callback(self,answer)
+  return dumps(answer)
  return wrapper
 
 class APIHandlerMetaClass(HandlerMetaClass):
