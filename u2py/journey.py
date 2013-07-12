@@ -136,7 +136,7 @@ def init(card,deposit):
 
  jsector = CONTRACT_A(CONTRACT1_STATIC,CONTRACT1_DYNAMIC)
  sector = card.sector(num=SECTOR,key=0,enc=ENCRYPTION,read=False)
- sector.data = cast(pointer(jsector),POINTER(ByteArray(sizeof(jsector)))).contents
+ sector.data = ByteArray(jsector)
 
  event = EVENT_CONTRACT(card,AID = AID,PIX = PIX)
 
