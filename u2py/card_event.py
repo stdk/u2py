@@ -37,7 +37,7 @@ class AppStatus(DumpableBigEndianStructure):
  def __init__(self):
   self.id = self.VALID_ID
   self.version = self.VALID_VERSION
-  self.record = 5 # index if last record is purposedly made (6-1) to write first event at the appropriate place
+  self.record = 5 # purposedly set to (6-1) to write first event at the appropriate place
   self.update_checksum()
 
  def update_checksum(self):
