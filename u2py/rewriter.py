@@ -1,5 +1,6 @@
-﻿from interface import load,lib,Reader,c_char_p,c_char,c_uint32,ByteArray
+﻿from interface import load,lib,Reader,ByteArray
 from interface import reader_get_sn,reader_get_version
+from ctypes import c_char_p,c_char,c_uint32
 import time
 from sys import stderr
 from multiprocessing.pool import ThreadPool
