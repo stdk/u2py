@@ -3,19 +3,20 @@ For this test we assume there is card present in reader field.
 This can be achieved either by using File implementation of reader
 or manually bringing card into actual reader field.
 '''
-from base import TestBase,HOST
+from base import TestBase
 
 from gevent import Timeout
 from gevent.server import StreamServer,DatagramServer
 from gevent.wsgi import WSGIServer
 import json
+from socket import gethostbyname,gethostname
 
 
 class Notifications(TestBase):
  TIMEOUT = 3
 
  def setUp(self):
-  self.host = HOST
+  self.host = gethostbyname(gethostname())
   self.port = 4000
   self.reader = 0
 
@@ -42,7 +43,6 @@ class Notifications(TestBase):
 
   response = []
   def handler(socket,address):
-   self.assertEquals(address[0],self.host)
    r = json.loads(socket.recv(128))
    self.assertEquals(r,{'reader': self.reader, 'sn' : self.sn})
    response.append(r)
@@ -57,7 +57,6 @@ class Notifications(TestBase):
 
   response = []
   def handler(data,address):
-   self.assertEquals(address[0],self.host)
    r = json.loads(data)
    self.assertEquals(r,{'reader': self.reader, 'sn' : self.sn})
    response.append(r)

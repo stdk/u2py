@@ -24,14 +24,24 @@ class U2(Thread):
 def test_interface():
  test_files('test_*.py')
 
-def test_service(with_service = None):
- if with_service == None: with_service = '+'
- if with_service == '+':
-  u2 = U2()
-  u2.start()
- test_files('service_test_*.py')
- if with_service == '+':
-  u2.terminate()
+class ServiceWrapper(object):
+ def __init__(self,run):
+  self.run = run
+
+ def __enter__(self):
+  if self.run:
+   self.u2 = U2()
+   self.u2.start()
+
+ def __exit__(self,*exc_info):
+  if self.run:
+   self.u2.terminate()
+
+def test_service(host = None):
+ import base
+ base.HOST = host if host else '127.0.0.1'
+ with ServiceWrapper(host == None):
+  test_files('service_test_*.py')
 
 if __name__ == '__main__':
  from sys import argv
