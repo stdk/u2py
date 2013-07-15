@@ -1,7 +1,7 @@
 include *.txt
 include u2.dll
 include u2.doc
-resursive-include docs *.txt
+recursive-include docs *.txt
 recursive-include webapi/static *.*
 recursive-include webapi/templates *.*
 include u2py/rewriter.ui
