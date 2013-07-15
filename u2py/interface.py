@@ -1,10 +1,10 @@
 from interface_basis import load,DumpableStructure,DumpableBigEndianStructure,DATE,TIME
-from ctypes import *
 from mfex import *
-import config
+from ctypes import POINTER as P,cdll,memmove,byref,addressof,cast,sizeof
+from ctypes import Structure,c_void_p,c_uint8,c_uint16,c_uint32,c_uint64,c_char
 from gevent.threadpool import ThreadPool
+import config
 
-P = POINTER
 BLOCK_LENGTH = 16
 
 STANDARD   = 0x4
@@ -16,7 +16,7 @@ DEFAULT_BAUD = 38400
 
 def ByteArray(obj,crc_LE = 1,cache = {},copy = False):
  if not isinstance(obj,int):
-  obj_bytearray = cast(byref(obj),POINTER(ByteArray(sizeof(obj)))).contents
+  obj_bytearray = cast(byref(obj),P(ByteArray(sizeof(obj)))).contents
   if copy:
    ret = ByteArray(sizeof(obj))()
    obj_bytearray.copy(ret)
@@ -63,11 +63,11 @@ def ByteArray(obj,crc_LE = 1,cache = {},copy = False):
    self.data[15] = reduce(lambda a,b: a^b,self.data[0:15])
 
   def cast(self,dst_type):
-   return cast(self.data,POINTER(dst_type)).contents
+   return cast(self.data,P(dst_type)).contents
 
   def copy(self,dst = None):
    if not dst: dst = type(self)()
-   memmove(addressof(dst),addressof(self),min(sizeof(self),sizeof(dst)))
+   memmove(byref(dst),byref(self),min(sizeof(self),sizeof(dst)))
    return dst
 
  cache[length,crc_LE] = ByteArrayTemplate
@@ -184,12 +184,12 @@ class SerialNumber(Structure):
 
  def SN5(self):
   sn = SN5()
-  memmove(addressof(sn),addressof(self.sn)+6,sizeof(sn))
+  memmove(byref(sn),byref(self.sn)+6,sizeof(sn))
   return sn
 
  def sn7(self):
   sn = c_uint64()
-  memmove(addressof(sn),addressof(self.sn)+10-self.len,self.len)
+  memmove(byref(sn),addressof(self.sn)+10-self.len,self.len)
   return sn.value
 
  def sn8(self):
