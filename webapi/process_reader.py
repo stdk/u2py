@@ -19,7 +19,10 @@ def logging_configurator(reader_path):
 
 def process_worker(connection,reader_kw):
  logging.config.dictConfigClass = logging_configurator(reader_kw['path'])
- exec(open('config.py'))
+
+ from glob import glob
+ for filename in glob('config.py'):
+  exec(open(filename).read())
 
  from handlers_base import format_exception
  from u2py.interface import Reader

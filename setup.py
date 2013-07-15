@@ -11,7 +11,11 @@ setup(
     license='LICENSE.txt',
     description='u2py',
     long_description=open('README.txt').read(),
+    package_data = {
+       'webapi': ['static/*', 'templates/*'],
+       'u2py': ['rewriter.ui'],
+    },
     install_requires=[
-        
+
     ],
 )

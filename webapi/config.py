@@ -3,8 +3,7 @@ import os
 host = '127.0.0.1'
 port = 1000
 
-webapi_folder = os.path.dirname(__file__).decode('cp1251')
-base_folder = os.path.join(webapi_folder,'..')
+base_folder = os.path.dirname(__file__).decode('cp1251')
 static_folder = os.path.join(base_folder,'static')
 templates_folder = os.path.join(base_folder,u'templates')
 

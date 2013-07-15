@@ -15,7 +15,9 @@ def rewriter():
 if __name__ == '__main__':
  multiprocessing.freeze_support()
 
- exec(open('config.py').read())
+ from glob import glob
+ for filename in glob('config.py'):
+  exec(open(filename).read())
 
  from sys import argv
 

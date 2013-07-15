@@ -22,8 +22,8 @@ setup(
  #zipfile = 1,
  data_files = [
 	  ('.',['u2.dll','config.py','u2.doc']),
-	  ('templates',['templates/index.html']),
-	  ('static',['static/jquery-1.8.0.min.js','static/rewriter.ui'])
+	  ('templates',['webapi/templates/index.html']),
+	  ('static',['webapi/static/jquery-1.8.0.min.js','u2py/rewriter.ui'])
 	],
  options = {
   'py2exe':{
