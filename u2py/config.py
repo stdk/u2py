@@ -1,5 +1,4 @@
-﻿import logging
-import logging.config
+﻿import os
 
 VERSION = 1,6,2
 
@@ -17,7 +16,8 @@ term_full_cost    = 9500
 term_half_cost    = 4800
 hall_id           = 100
 
-rewriter_ui_path = 'rewriter.ui'
+base_folder = os.path.join(os.path.dirname(__file__).decode('cp1251'),'..')
+rewriter_ui_path = os.path.join(base_folder,'static/rewriter.ui')
 
 import socket
 try:

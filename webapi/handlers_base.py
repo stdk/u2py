@@ -3,18 +3,16 @@ if __name__ == '__main__':
  import sys
  sys.path.append('../')
 
-
 import config
+import logging
 import web
-from sys import exc_info
+from sys import exc_info,platform
 from json import JSONEncoder,dumps,loads
 from inspect import getargspec
-from sys import platform
 
 if platform == 'win32': from time import clock as clock
 if platform == 'linux2': from time import time as clock
 
-from u2py.config import logging
 from adbk.state import State
 
 urls = []

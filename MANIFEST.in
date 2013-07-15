@@ -1,0 +1,5 @@
+include *.txt
+include u2.dll
+recursive-include static *.*
+recursive-include templates *.*
+resursive-include docs *.txt
