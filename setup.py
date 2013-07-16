@@ -1,8 +1,10 @@
 from distutils.core import setup
 
+from u2py.config import VERSION
+
 setup(
     name='u2py',
-    version='1.6.2',
+    version='.'.join(str(i) for i in VERSION),
     author='feanor',
     author_email='std.feanor@gmail.com',
     packages=['u2py','webapi','adbk'],
