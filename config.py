@@ -5,10 +5,6 @@ import webapi.config
 webapi.config.host = '127.0.0.1'
 webapi.config.port = 1000
 
-# Каталоги ресурсов веб-интерфейса
-webapi.config.templates_folder = 'templates'
-webapi.config.static_folder = 'static'
-
 # Настройки требовательности команд API к наличию сервера.
 # К командам чтения относятся: /api/scan и /api/term/available .
 # Все остальные команды являюися командами записи.
@@ -26,26 +22,30 @@ import logging.config
 logging.config.dictConfig({
  'version': 1,    # Configuration schema in use; must be 1 for now
  'formatters': {
-     'standard': {
-         'format': ('%(asctime)s '
-                    '%(levelname)-8s %(message)s')}},
- 'handlers': {'u2': { 'backupCount': 10,                                # количество файлов в ротации
-                       'class': 'logging.handlers.RotatingFileHandler', # метод логирования
-                       'filename': 'u2.log',                            # базовое имя файла
-                       'formatter': 'standard',
-                       'level': 'DEBUG',                                # уровень отладочных сообщений
-                       'maxBytes': 10000000                             # размер файла, после которого будет выполнена ротация
-					}
-             },
+  'standard': {
+   'format': ('%(asctime)s '
+   '%(levelname)-8s %(message)s')
+  }
+ },
+ 'handlers': {
+  'u2': {
+   'backupCount': 10,                               # количество файлов в ротации
+   'class': 'logging.handlers.RotatingFileHandler', # метод логирования
+   'filename': 'u2.log',                            # базовое имя файла
+   'formatter': 'standard',
+   'level': 'DEBUG',                                # уровень отладочных сообщений
+   'maxBytes': 10000000                             # размер файла, после достижения которого будет выполнена ротация
+  }
+ },
  # Specify properties of the root logger
- 'root': { 'level': 'DEBUG', 'handlers': ['u2'] }, #  используем обьявленный выше хендлер u2
+ 'root': {
+  'level': 'DEBUG',
+  'handlers': ['u2'] #  используем обьявленный выше хендлер u2
+ },
 })
 
 # Настройки модуля работы с бесконтактными карточками
 import u2py.config
-
-# путь к определению интерфейса ПО для смены прошивки считывателя
-u2py.config.rewriter_ui_path = 'static/rewriter.ui'
 
 # Список системных адресов последовательных портов,
 # к которым подключены считыватели БК.

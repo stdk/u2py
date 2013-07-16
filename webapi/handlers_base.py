@@ -37,7 +37,6 @@ class JsonError(Exception):
 
 class Handler(object):
  __metaclass__ = HandlerMetaClass
- templates = web.template.render(config.templates_folder.encode('cp1251'))
 
 def format_exception(type,value,tb):
  if type != None:

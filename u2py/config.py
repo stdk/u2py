@@ -1,6 +1,6 @@
 ﻿import os
 
-VERSION = 1,6,2
+VERSION = 1,6,3
 
 lib_filename      = '../u2.dll'
 db_filename       = 'db.db3'
@@ -15,9 +15,6 @@ journey_cost = 200
 term_full_cost    = 9500
 term_half_cost    = 4800
 hall_id           = 100
-
-base_folder = os.path.dirname(__file__).decode('cp1251')
-rewriter_ui_path = os.path.join(base_folder,'rewriter.ui')
 
 import socket
 try:

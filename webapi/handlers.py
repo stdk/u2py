@@ -5,8 +5,10 @@ if __name__ == '__main__':
 
 import config
 import os
-from web import form,NotFound
+import web
+from web import form,template,NotFound
 from handlers_base import Handler,urls
+from pkg_resources import resource_string
 
 import scan
 import card
@@ -31,16 +33,17 @@ class index(Handler):
  )
 
  url = '/'
+
  def GET(self):
   form = self.refill_journey_form()
-  return self.templates.index(form)
+  return template.Template(resource_string(__name__,'templates/index.html'))(form)
 
 class static(Handler):
  url = '/static/(.*)'
+
  def GET(self,filename):
-  print 'static',filename
   try:
-   path = os.path.join(config.static_folder,filename)
-   return open(path, 'r').read()
+   name = os.path.basename(filename)
+   return resource_string(__name__,'static/' + name)
   except IOError:
-   raise web.NotFound()
+   raise NotFound()

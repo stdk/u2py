@@ -2,13 +2,12 @@
 from interface import reader_get_sn,reader_get_version
 from ctypes import c_char_p,c_char,c_uint32
 import time
-from sys import stderr
 from multiprocessing.pool import ThreadPool
 from threading import Event
 from PyQt4 import QtGui,QtCore,uic
 from PyQt4.QtGui import QFileDialog,QMainWindow,QStandardItemModel,QStandardItem, QApplication, QCursor
 from PyQt4.QtCore import pyqtSignal,Qt
-import config
+from pkg_resources import resource_stream
 
 reader_update_start      = load(lib,'reader_update_start'       ,(Reader,))
 reader_sync              = load(lib,'reader_sync'               ,(Reader,))
@@ -21,7 +20,7 @@ class Widget(QMainWindow):
 
  def __init__(self,parent=None):
   QMainWindow.__init__(self,parent)
-  uiClass, qtBaseClass = uic.loadUiType(config.rewriter_ui_path)
+  uiClass, qtBaseClass = uic.loadUiType(resource_stream(__name__,'rewriter.ui'))
   self.ui = uiClass()
   self.ui.setupUi(self)
 
