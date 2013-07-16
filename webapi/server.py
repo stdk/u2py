@@ -6,6 +6,11 @@ import os
 import web
 import handlers
 
+import sys
+if sys.platform == 'win32':
+ reload(sys)
+ sys.setdefaultencoding('cp1251')
+
 class Server(WSGIServer):
  def serve_forever(self,*args,**kw):
   from handlers_base import APIHandler
