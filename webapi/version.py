@@ -1,7 +1,7 @@
 ﻿from handlers_base import APIHandler
 import config
 
-from u2py.config import VERSION
+from u2py import __version__
 from adbk.state import State
 
 class version(APIHandler):
@@ -29,6 +29,6 @@ class version(APIHandler):
     'version': reader.version()
    })
   else:
-   answer['version'] = '.'.join(str(i) for i in VERSION)
+   answer['version'] = '.'.join(str(i) for i in __version__)
    answer['stoplist'] = State.get_stoplist_version()
 

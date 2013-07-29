@@ -1,11 +1,7 @@
 ﻿from multiprocessing import Process, Pipe
 from gevent.threadpool import ThreadPool
-import logging.config
 from os import path
-
-from sys import platform
-if platform == 'win32': from time import clock as clock
-if platform == 'linux2': from time import time as clock
+import logging.config
 
 __all__ = ['ProcessReader']
 
@@ -17,37 +13,40 @@ def logging_configurator(reader_path):
   return logging.config.DictConfigurator(config)
  return closure
 
-def process_worker(connection,reader_kw):
+def process_request(reader,callback,request):
+ from handlers_base import format_exception
+ request['reader'] = reader
+
+ with reader:
+  mod, cls = callback.rsplit('.', 1)
+  mod = __import__(mod, None, None, [''])
+  cls = getattr(mod, cls)
+
+  cls().action(**request)
+
+ request['answer']['error'] = format_exception(*reader.exc_info)
+
+def remote_worker(connection,reader_kw):
  logging.config.dictConfigClass = logging_configurator(reader_kw['path'])
 
  from glob import glob
  for filename in glob('config.py'):
   exec(open(filename).read())
 
- from handlers_base import format_exception
+ from u2py.config import time
  from u2py.interface import Reader
  reader = Reader(**reader_kw)
 
  while True:
   try:
    callback,request = connection.recv()
-  except KeyboardInterrupt:
-   break
+  except KeyboardInterrupt: break;
 
-  if callback == 'close': break
+  if callback == 'close': break;
 
-  mod, cls = callback.rsplit('.', 1)
-  mod = __import__(mod, None, None, [''])
-  cls = getattr(mod, cls)
-
-  clock_begin = clock()
-
-  request['reader'] = reader
-
-  with reader:
-   cls().action(**request)
-  request['answer']['error'] = format_exception(*reader.exc_info)
-  request['answer']['process_time_elapsed'] = clock() - clock_begin
+  time_begin = time()
+  process_request(reader,callback,request)
+  request['answer']['process_time_elapsed'] = time() - time_begin
 
   connection.send(request['answer'])
 
@@ -69,8 +68,8 @@ class ProcessReader(object):
   instead. This technique currently supports only APIHandler descendants.
   Classname if being guessed in such way:
     1. if |args| contains anything, we treat it as an instance of our "action-class"
-       ignoring |callback| parameter (this behaviour conforms to a thread-based reader
-       implementation)
+       ignoring |callback| parameter (This is how API callbacks are called via
+       generic ThreadPool.apply).
     2. if there is no elements in |args|, then |callback| will be used as a class name
        for remote call directly.
   When remote call executes successfully |kwds['answer']| will be updated with
@@ -98,12 +97,14 @@ class ProcessReader(object):
 
  def close(self):
   if self.started:
-   self.connection.send(['close', None])
+   self.connection.send(['close',{}])
    self.process.join()
+   #if self.process.is_alive():
+   # self.process.terminate()
    self.started = False
 
  def __init__(self,**reader_kw):
   self.thread_pool = ThreadPool(1)
   self.connection,child_connection = Pipe()
-  self.process = Process(target = process_worker, args = (child_connection,reader_kw))
+  self.process = Process(target = remote_worker, args = (child_connection,reader_kw))
   self.started = False

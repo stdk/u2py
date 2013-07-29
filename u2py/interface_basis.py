@@ -1,9 +1,8 @@
 ﻿from ctypes import c_long,c_uint16,memmove,addressof,sizeof
 from ctypes import Structure,BigEndianStructure
 from datetime import datetime,date
-from config import reopen_on_io_error
+from config import reopen_on_io_error,time
 from copy import deepcopy
-from time import clock
 import logging
 
 IO_ERROR           = 0x0E000001
@@ -16,11 +15,12 @@ def load(library,name,args,res = c_long):
  function.argtypes = args
  function.restype = res
  def wrapper(*params):
-  begin_clock = clock()
+  begin_time = time()
 
+  ret = None
   try:
    ret = function(*params)
-   time_elapsed = clock() - begin_clock
+   time_elapsed = time() - begin_time
 
    logging.debug(' | '.join( ["%6.4f" % (time_elapsed),name,strParams(params),hex(ret)] ))
 

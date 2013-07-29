@@ -9,10 +9,7 @@ import web
 from sys import exc_info,platform
 from json import JSONEncoder,dumps,loads
 from inspect import getargspec
-
-if platform == 'win32': from time import clock as clock
-if platform == 'linux2': from time import time as clock
-
+from u2py.config import time
 from adbk.state import State
 
 urls = []
@@ -122,7 +119,7 @@ def api_callback(self,callback,args = None,post_data = None):
 
  answer = { 'error' : None }
  try:
-  clock_begin = clock()
+  time_begin = time()
 
   answer['is_server_present'] = State.is_server_present()
   if self.need_server and not answer['is_server_present']:
@@ -138,7 +135,7 @@ def api_callback(self,callback,args = None,post_data = None):
  except Exception as e:
   answer['error'] = format_exception(*exc_info())
  finally:
-  answer['time_elapsed'] = clock() - clock_begin
+  answer['time_elapsed'] = time() - time_begin
  return answer
 
 class Args(object):
