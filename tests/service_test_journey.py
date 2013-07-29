@@ -24,7 +24,7 @@ class JourneyContract(TestCardBase):
   super(JourneyContract,self).setUp()
 
   self.aspp = '1111222233334444'
-  self.init_transport_card(aspp = '1111222233334444')
+  self.init_transport_card(aspp = self.aspp)
 
   self.deposit = 123
   self.init(self.deposit)
