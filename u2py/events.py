@@ -39,10 +39,14 @@ def fill_event_from_card(event,card):
   event.AID = contract >> 12;
   event.PIX = contract & 0xFFF;
 
+# base storage class defines its table name and registry for its events
+# when there is not registry defined, base class (i.e. Event) registry
+# will be used
 class ServiceEvent(Event):
  TABLE = 'events'
+ registry = {}
 
-@Event.register
+@ServiceEvent.register
 class EVENT_WALLET_OPERATION2(ServiceEvent,DumpableStructure):
  'event 214, sizeof() = 39'
  EventCode = 214
@@ -68,7 +72,7 @@ class EVENT_WALLET_OPERATION2(ServiceEvent,DumpableStructure):
    self.Amount = abs(amount)
   Event.__init__(self,**kw)
 
-@Event.register
+@ServiceEvent.register
 class EVENT_CONTRACT_ADD2(ServiceEvent,DumpableStructure):
  'event 226 sizeof() = 45'
  EventCode = 226
@@ -97,7 +101,7 @@ class EVENT_CONTRACT_ADD2(ServiceEvent,DumpableStructure):
   if card: fill_event_from_card(self,card)
   Event.__init__(self,**kw)
 
-@Event.register
+@ServiceEvent.register
 class EVENT_CONTRACT(ServiceEvent,DumpableStructure):
  'event 230 sizeof() = 40'
  EventCode = 230
@@ -123,7 +127,7 @@ class EVENT_CONTRACT(ServiceEvent,DumpableStructure):
   if card: fill_event_from_card(self,card)
   Event.__init__(self,**kw)
 
-@Event.register
+@ServiceEvent.register
 class EVENT_CONTRACT_ZALOG(ServiceEvent,DumpableStructure):
  'event 215 sizeof() = 30'
  EventCode = 215
@@ -148,7 +152,7 @@ class EVENT_CONTRACT_ZALOG(ServiceEvent,DumpableStructure):
   if card: fill_event_from_card(self,card)
   Event.__init__(self,**kw)
 
-@Event.register
+@ServiceEvent.register
 class EVENT_ENCASHMENT(ServiceEvent,DumpableStructure):
  EventCode = 231
  _pack_ = 1
@@ -182,8 +186,4 @@ if __name__ == '__main__':
  x.save()
 
  print events.Event.load_last()
-
-
-
-
 
