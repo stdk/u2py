@@ -1,7 +1,31 @@
 from interface_basis import DumpableStructure
 from ctypes import c_uint8,c_uint16,c_uint32,c_uint64,sizeof
-from db import Event,ASPP
+from db import Event,ASPP,executescript
 import config
+
+executescript("""
+CREATE TABLE if not exists events (
+    id INTEGER PRIMARY KEY default (null),
+    Time TEXT DEFAULT (datetime(current_timestamp, 'localtime')),
+    EventCode INTEGER,
+    ErrorCode INTEGER,
+    EventVer INTEGER,
+    BitMapVer INTEGER,
+    UserCardType INTEGER,
+    UserCardSN INTEGER,
+    UserASPPSN ASPP_TEXT,
+    CashCardSN INTEGER,
+    CashASPPSN ASPP_TEXT,
+    AID INTEGER,
+    PIX INTEGER,
+    TransactionType INTEGER,
+    TransactionValue INTEGER,
+    Value INTEGER,
+    Amount INTEGER,
+    LocalTransactions INTEGER,
+    GlobalTransactions INTEGER
+);
+""")
 
 def fill_event_from_card(event,card):
  event.CashCardSN = config.cash_card_sn
@@ -15,8 +39,11 @@ def fill_event_from_card(event,card):
   event.AID = contract >> 12;
   event.PIX = contract & 0xFFF;
 
+class ServiceEvent(Event):
+ TABLE = 'events'
+
 @Event.register
-class EVENT_WALLET_OPERATION2(Event,DumpableStructure):
+class EVENT_WALLET_OPERATION2(ServiceEvent,DumpableStructure):
  'event 214, sizeof() = 39'
  EventCode = 214
  _pack_ = 1
@@ -42,7 +69,7 @@ class EVENT_WALLET_OPERATION2(Event,DumpableStructure):
   Event.__init__(self,**kw)
 
 @Event.register
-class EVENT_CONTRACT_ADD2(Event,DumpableStructure):
+class EVENT_CONTRACT_ADD2(ServiceEvent,DumpableStructure):
  'event 226 sizeof() = 45'
  EventCode = 226
  _pack_ = 1
@@ -71,7 +98,7 @@ class EVENT_CONTRACT_ADD2(Event,DumpableStructure):
   Event.__init__(self,**kw)
 
 @Event.register
-class EVENT_CONTRACT(Event,DumpableStructure):
+class EVENT_CONTRACT(ServiceEvent,DumpableStructure):
  'event 230 sizeof() = 40'
  EventCode = 230
  _pack_ = 1
@@ -97,7 +124,7 @@ class EVENT_CONTRACT(Event,DumpableStructure):
   Event.__init__(self,**kw)
 
 @Event.register
-class EVENT_CONTRACT_ZALOG(Event,DumpableStructure):
+class EVENT_CONTRACT_ZALOG(ServiceEvent,DumpableStructure):
  'event 215 sizeof() = 30'
  EventCode = 215
  _pack_ = 1
@@ -122,7 +149,7 @@ class EVENT_CONTRACT_ZALOG(Event,DumpableStructure):
   Event.__init__(self,**kw)
 
 @Event.register
-class EVENT_ENCASHMENT(Event,DumpableStructure):
+class EVENT_ENCASHMENT(ServiceEvent,DumpableStructure):
  EventCode = 231
  _pack_ = 1
  _fields_ = [

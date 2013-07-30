@@ -7,7 +7,7 @@ update_folder = 'update'
 
 from state import State
 from u2py.interface_basis import DumpableStructure,DATE,TIME
-from u2py.events import Event
+from u2py.events import ServiceEvent
 from u2py.config import hall_id,hall_device_id
 from u2py.stoplist import Stoplist
 from datetime import datetime
@@ -248,7 +248,8 @@ class FLASHEVENT(DumpableStructure):
 
 @register(commands,key = cmdGetLastEventNo)
 def get_last_event_no(command):
- last = Event.load_last()
+ last = ServiceEvent.load_last()
+ if last == None: return
  event = FLASHEVENT(last)
  return SAnswer(blocks = [event])
 
@@ -297,5 +298,5 @@ def sync_time(command):
 def get_events(command):
  borders = command.event,command.event+command.count
  limits = min(*borders),max(*borders)-1
- blocks = [FLASHEVENT(event) for event in Event.load(limits)]
+ blocks = [FLASHEVENT(event) for event in ServiceEvent.load(limits)]
  return SAnswer(blocks = blocks)
