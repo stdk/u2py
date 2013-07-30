@@ -1,6 +1,5 @@
 from ctypes import c_uint8,c_uint16,c_uint32,c_uint64,BigEndianStructure,sizeof
-from interface import DumpableStructure,DumpableBigEndianStructure,ByteArray,Reader
-from interface_basis import DATE
+from interface_basis import DumpableStructure,DumpableBigEndianStructure,ByteArray,DATE
 from datetime import datetime,timedelta
 from mfex import *
 from contract import CONTRACT_A
@@ -24,7 +23,10 @@ class PURSE_DYNAMIC_DATA(DumpableBigEndianStructure):
 
  def __init__(self):
   self.status = 1
-  ByteArray(self).crc16_calc(low_endian=0)
+  self.update_checksum()
+
+ def update_checksum(self):
+  ByteArray(self).crc16_calc(low_endian = 0)
 
  @classmethod
  def validate(cls,data):
@@ -138,6 +140,7 @@ def init(card):
  sector.set_trailer(KEY)
 
 if __name__ == "__main__":
+ from interface import Reader
  import transport_card
  card = Reader().scan()
 

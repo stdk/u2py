@@ -1,5 +1,5 @@
-from interface import load,lib,Reader
-from interface_basis import DumpableStructure,DATE,TIME
+from interface_basis import load,DumpableStructure,DATE,TIME
+from interface import Reader
 from ctypes import c_uint32,c_uint16,c_uint8,POINTER as P,sizeof
 from transport_card import ASPP
 from datetime import datetime
@@ -70,8 +70,8 @@ class IN_TCULIGHTACTIV(DumpableStructure):
   self.device_type = config.device_type
   self.device_number = config.hall_device_id
 
-card_read_ulight         = load(lib,'card_read_ulight'          ,(Reader,P(AIDPIX),P(IN_TCULIGHTREAD),))
-card_activate_ulight     = load(lib,'card_activate_ulight'      ,(Reader,P(IN_TCULIGHTACTIV),))
+card_read_ulight         = load('card_read_ulight'          ,(Reader,P(AIDPIX),P(IN_TCULIGHTREAD),))
+card_activate_ulight     = load('card_activate_ulight'      ,(Reader,P(IN_TCULIGHTACTIV),))
 
 def read(card):
  u = IN_TCULIGHTREAD()

@@ -1,140 +1,17 @@
-from interface_basis import load,DumpableStructure,DumpableBigEndianStructure,DATE,TIME
-from mfex import *
-from ctypes import POINTER as P,cdll,memmove,byref,addressof,cast,sizeof
+from interface_basis import load,DumpableStructure,DumpableBigEndianStructure
+from interface_basis import DATE,TIME,ByteArray,BaseReader,DEBUG
+from ctypes import POINTER as P,memmove,byref,cast,sizeof
 from ctypes import Structure,c_void_p,c_uint8,c_uint16,c_uint32,c_uint64,c_char
-from gevent.threadpool import ThreadPool
+from mfex import *
 import config
 
 BLOCK_LENGTH = 16
-
 STANDARD   = 0x4
 ULTRALIGHT = 0x44
 
-DEBUG = False
-
-DEFAULT_BAUD = 38400
-
-def ByteArray(obj,crc_LE = 1,cache = {},copy = False):
- if not isinstance(obj,int):
-  obj_bytearray = cast(byref(obj),P(ByteArray(sizeof(obj)))).contents
-  if copy:
-   ret = ByteArray(sizeof(obj))()
-   obj_bytearray.copy(ret)
-   return ret
-  return obj_bytearray
-
- length = obj
- if (length,crc_LE) in cache: return cache[length,crc_LE]
- class ByteArrayTemplate(Structure):
-  _fields_ = [('data',c_uint8 * length)]
-
-  def __init__(self,*args):
-   [self.data.__setitem__(i,value) for i,value in enumerate(args)]
-
-  def __getitem__(self,index):
-   return self.data[index]
-
-  def __setitem__(self,index,value):
-   self.data[index] = value
-
-  def __str__(self):
-   return ' '.join( '%02x' % i for i in self.data )
-  __repr__ = __str__
-
-  def __len__(self):
-   return len(self.data)
-
-  def __eq__(self,r):
-   return self.data[:] == r[:]
-
-  def __ne__(self,r):
-   return not(self.__eq__(r))
-
-  def crc16_check(self,low_endian=crc_LE,size = length):
-   return crc16_check(cast(self.data,c_void_p),size,low_endian)
-
-  def crc16_calc(self,low_endian=crc_LE,size = length):
-   return crc16_calc(cast(self.data,c_void_p),size,low_endian)
-
-  def xor_check(self):
-   return reduce(lambda a,b: a^b,self.data[0:15]) == self.data[15]
-
-  def xor_calc(self):
-   self.data[15] = reduce(lambda a,b: a^b,self.data[0:15])
-
-  def cast(self,dst_type):
-   return cast(self.data,P(dst_type)).contents
-
-  def copy(self,dst = None):
-   if not dst: dst = type(self)()
-   memmove(byref(dst),byref(self),min(sizeof(self),sizeof(dst)))
-   return dst
-
- cache[length,crc_LE] = ByteArrayTemplate
- return ByteArrayTemplate
-
-class Reader(c_void_p):
- def __init__(self,path = None,baud = None,impl = None,explicit_error = False):
-  '''
-  Reader object can be created even if required port cannot be opened.
-  It will try to fix itself afterwards.
-  To check current Reader status use 'is_open' method.
-  '''
-  self.pool = ThreadPool(1)
-  self._is_open = False
-  if not path:
-    kw = config.reader_path[0]
-    path,baud,impl = kw['path'],kw.get('baud',DEFAULT_BAUD),kw.get('impl',config.default_impl)
-  self.path = path
-  self.baud = baud if baud != None else DEFAULT_BAUD
-  self.impl = impl if impl != None else config.default_impl
-
-  try:
-   self.open()
-  except ReaderError:
-   if explicit_error: raise
-   print 'Cannot open Reader on {0}. Will try to fix afterwards...'.format(self.path)
-
- def is_open(self):
-  return self._is_open
-
- @staticmethod
- def execute_with_context(context, callback, args, kwds):
-  with context:
-   return callback(*args, **kwds)
-
- def apply(self, callback, args = None, kwds = None):
-  if args == None:
-   args = ()
-  if kwds == None:
-   kwds = {}
-  return self.pool.apply(self.execute_with_context, args = (self,callback,args,kwds))
-
- def __enter__(self):
-  self.exc_info = (None,None,None)
-  return self
-
- def __exit__(self, type, value, traceback):
-  self.exc_info = (type,value,traceback)
-  return True
-
- def open(self):
-  'Opens reader on a given port and raises ReaderError otherwise.'
-  if DEBUG: print 'Reader.open',(self.path,self.baud,self.impl)
-  if not self._is_open:
-   if reader_open(self.path,self.baud,self.impl,self): raise ReaderError()
-   self._is_open = True
-
- def close(self):
-  'Closes current reader connection if it was open before.'
-  if self._is_open:
-   reader_close(self)
-   self._is_open = False
-
- def reopen(self):
-  print 'reopen'
-  self.close()
-  self.open()
+class Reader(BaseReader):
+ def __init__(self,*args,**kw):
+  super(Reader,self).__init__(*args,**kw)
 
  def version(self):
   version = ByteArray(7)()
@@ -156,7 +33,6 @@ class Reader(c_void_p):
 
  def reset_field(self):
   if not self.is_open(): raise ReaderError()
-  #if reader_field_off(self) or reader_field_on(self):
   if reader_field_on(self):
    raise ReaderError()
 
@@ -185,12 +61,12 @@ class SerialNumber(Structure):
 
  def SN5(self):
   sn = SN5()
-  memmove(byref(sn),byref(self.sn)+6,sizeof(sn))
+  memmove(byref(sn),byref(self.sn,6),sizeof(sn))
   return sn
 
  def sn7(self):
   sn = c_uint64()
-  memmove(byref(sn),addressof(self.sn)+10-self.len,self.len)
+  memmove(byref(sn),byref(self.sn,10-self.len),self.len)
   return sn.value
 
  def sn8(self):
@@ -329,32 +205,25 @@ class ByBlockSector(Sector):
   for b in blocks:
    if card_block_write(self.card.reader,self,b,self.enc[b]): raise SectorWriteError(self.num,b)
 
-#library functions
-lib = cdll.LoadLibrary(config.lib_filename)
-crc16_check             = load(lib,'crc16_check'               ,(c_void_p,c_uint32,c_uint8,))
-crc16_calc              = load(lib,'crc16_calc'                ,(c_void_p,c_uint32,c_uint8,))
+reader_field_on         = load('reader_field_on'           ,(Reader,))
+reader_field_off        = load('reader_field_off'          ,(Reader,))
 
-reader_open             = load(lib,'reader_open'               ,(P(c_char),c_uint32,P(c_char),P(Reader),))
-reader_close            = load(lib,'reader_close'              ,(Reader,))
-reader_field_on         = load(lib,'reader_field_on'           ,(Reader,))
-reader_field_off        = load(lib,'reader_field_off'          ,(Reader,))
+reader_get_sn           = load('reader_get_sn'             ,(Reader,P(ByteArray(8))))
+reader_get_version      = load('reader_get_version'        ,(Reader,P(ByteArray(7))))
 
-reader_get_sn           = load(lib,'reader_get_sn'             ,(Reader,P(ByteArray(8))))
-reader_get_version      = load(lib,'reader_get_version'        ,(Reader,P(ByteArray(7))))
+reader_save             = load('reader_save'               ,(Reader,P(c_char)))
+reader_load             = load('reader_load'               ,(Reader,P(c_char)))
 
-reader_save             = load(lib,'reader_save'               ,(Reader,P(c_char)))
-reader_load             = load(lib,'reader_load'               ,(Reader,P(c_char)))
-
-card_mfplus_personalize = load(lib,'card_mfplus_personalize'   ,(Reader,P(Card)))
-card_scan               = load(lib,'card_scan'                 ,(Reader,P(Card),))
-card_reset              = load(lib,'card_reset'                ,(Reader,P(Card),))
-card_sector_auth        = load(lib,'card_sector_auth'          ,(Reader,P(Card),P(Sector),))
-card_block_read         = load(lib,'card_block_read'           ,(Reader,P(Sector),c_uint8,c_uint8,))
-card_block_write        = load(lib,'card_block_write'          ,(Reader,P(Sector),c_uint8,c_uint8,))
-card_sector_read        = load(lib,'card_sector_read'          ,(Reader,P(Sector),c_uint8,))
-card_sector_write       = load(lib,'card_sector_write'         ,(Reader,P(Sector),c_uint8,))
-card_sector_set_trailer = load(lib,'card_sector_set_trailer'   ,(Reader,P(Sector)))
-card_sector_set_trailer_dynamic = load(lib,'card_sector_set_trailer_dynamic'   ,(Reader,P(Sector),P(Card)))
+card_mfplus_personalize = load('card_mfplus_personalize'   ,(Reader,P(Card)))
+card_scan               = load('card_scan'                 ,(Reader,P(Card),))
+card_reset              = load('card_reset'                ,(Reader,P(Card),))
+card_sector_auth        = load('card_sector_auth'          ,(Reader,P(Card),P(Sector),))
+card_block_read         = load('card_block_read'           ,(Reader,P(Sector),c_uint8,c_uint8,))
+card_block_write        = load('card_block_write'          ,(Reader,P(Sector),c_uint8,c_uint8,))
+card_sector_read        = load('card_sector_read'          ,(Reader,P(Sector),c_uint8,))
+card_sector_write       = load('card_sector_write'         ,(Reader,P(Sector),c_uint8,))
+card_sector_set_trailer = load('card_sector_set_trailer'   ,(Reader,P(Sector)))
+card_sector_set_trailer_dynamic = load('card_sector_set_trailer_dynamic'   ,(Reader,P(Sector),P(Card)))
 
 def random_data(size,a=0,b=0xFF):
  from random import randint
@@ -370,7 +239,7 @@ def test_bytestaffing():
  []
  '''
  from time import time
- test = load(lib,'bytestaffing_test',())
+ test = load('bytestaffing_test',())
  a = time()
  test_data = [random_data(1000) for i in xrange(100)]
  b = time()

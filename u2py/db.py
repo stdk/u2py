@@ -1,5 +1,5 @@
 import sqlite3
-from interface import ByteArray,c_uint8
+from interface_basis import ByteArray
 from card_event import CardEvent
 from mfex import *
 import config
@@ -11,7 +11,7 @@ def executescript(script):
  with db_connection as c:
   c.executescript(script)
 
-executescript("PRAGMA journal_mode=WAL;")
+executescript("PRAGMA journal_mode = WAL;")
 #executescript("PRAGMA synchronous = OFF;");
 
 NO_RESOURCE    = 1
@@ -38,8 +38,6 @@ MIFARE_STANDARD = 0x4
 MIFARE_ULTRALIGHT = 0x44
 
 class ASPP(ByteArray(10)):
- #_fields_ = [('data',c_uint8*10)]
-
  def __repr__(self):
   return ''.join(["%02x" % (i) for i in self.data[0:8]][::-1])
 
@@ -117,30 +115,6 @@ class Event(object):
    rows = c.execute(cls.LOAD_RANGE_QUERY.format(cls.TABLE),(a,b))
    return [cls.registry[row['EventCode']](**row) for row in rows]
 
-if __name__ == '__main__':
- executescript("""
-CREATE TABLE if not exists events (
-    id INTEGER PRIMARY KEY default (null),
-    Time TEXT DEFAULT (datetime(current_timestamp, 'localtime')),
-    EventCode INTEGER,
-    ErrorCode INTEGER,
-    EventVer INTEGER,
-    BitMapVer INTEGER,
-    UserCardType INTEGER,
-    UserCardSN INTEGER,
-    UserASPPSN ASPP_TEXT,
-    CashCardSN INTEGER,
-    CashASPPSN ASPP_TEXT,
-    AID INTEGER,
-    PIX INTEGER,
-    TransactionType INTEGER,
-    TransactionValue INTEGER,
-    Value INTEGER,
-    Amount INTEGER,
-    LocalTransactions INTEGER,
-    GlobalTransactions INTEGER
-);
-""")
 
 
 

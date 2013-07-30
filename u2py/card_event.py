@@ -1,5 +1,4 @@
-from interface_basis import DumpableStructure,DumpableBigEndianStructure,DATE,TIME
-from interface import ByteArray
+from interface_basis import DumpableStructure,DumpableBigEndianStructure,DATE,TIME,ByteArray
 from ctypes import c_uint8,c_uint16,c_uint32,c_uint64,pointer,POINTER,cast,sizeof
 from config import db_filename,hall_id,hall_device_id,device_type
 from contract import DYNAMIC_A

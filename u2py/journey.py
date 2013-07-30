@@ -51,6 +51,9 @@ class CONTRACT1_DYNAMIC(DumpableStructure):
   self._reserved[:] = self.VALID_RESERVED
   self._mac_alg_id = self.VALID_ALG_ID
   self._mac_key_id = self.VALID_KEY_ID
+  self.update_checksum()
+
+ def update_checksum(self):
   cast(pointer(self),POINTER(ByteArray(16))).contents.crc16_calc()
 
  def refill(self,amount):

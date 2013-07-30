@@ -1,7 +1,8 @@
-from interface import DumpableStructure,ByteArray,Reader
+from interface_basis import DumpableStructure,ByteArray
+from ctypes import Structure,memmove,sizeof,byref
 from mfex import *
-from ctypes import Structure,memmove,addressof,sizeof,cast,pointer as p,POINTER as P
 import logging
+
 
 class DYNAMIC_A(DumpableStructure):
  _fields_ = [('b1',ByteArray(16)),
@@ -11,22 +12,28 @@ class DYNAMIC_A(DumpableStructure):
   return '{0}+{1}'.format(self.b1,self.b2)
 
  def __init__(self, cls):
+  self.dynamic_class = cls
   data = ByteArray(cls())
   self.b1,self.b2 = data,data
+
+ def __enter__(self):
+  return self.b1.cast(self.dynamic_class)
+
+ def __exit__(self,*exc_info):
+  self.b1.cast(self.dynamic_class).update_checksum()
+  self.b2 = self.b1
 
  def commit(self,data,low_endian=1):
   '''
   This functions finalizes contents of dynamic contract part in memory.
   `data` argument should contain single valid block (ByteArray(16) or any
   other size-compatible ctypes type).
-  This data will then be copied to block1, crc16 summ will be calculated in-place
+  This data will then be copied to block1, checksum will be calculated in-place
   and block1 will be copied to block2.
   '''
-  dst1,dst2,src = addressof(self.b1),addressof(self.b2),addressof(data)
-  size = sizeof(self.b1)
-  memmove(dst1,src,min(size,sizeof(data)))
-  self.b1.crc16_calc(low_endian=low_endian)
-  memmove(dst2,dst1,size)
+  data.update_checksum()
+  self.b1 = ByteArray(data)
+  self.b2 = self.b1
 
  @classmethod
  def validate(cls, data, dynamic_class, callback):
@@ -55,6 +62,7 @@ class DYNAMIC_A(DumpableStructure):
   For everything else see DYNAMIC_A.validate.
   This is instanced version of the same functionality.
   '''
+  self.dynamic_class = dynamic_class
   fail_block = self.amend_fail_block(dynamic_class)
   if fail_block != None:
    logging.debug('restoring fail block[%i]' % (fail_block,))

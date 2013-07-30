@@ -1,4 +1,4 @@
-from interface import lib,load,DumpableStructure,DATE,TIME,ByteArray
+from interface_basis import load,DumpableStructure,DATE,TIME,ByteArray
 from contract import DYNAMIC_A
 from events import EVENT_CONTRACT_ADD2,EVENT_CONTRACT
 from config import term_full_cost,term_half_cost,hall_id
@@ -11,9 +11,9 @@ from time import clock
 from mfex import *
 
 #workaround for wrong ctypes behaviour when writing bit fields
-term_set_validity       = load(lib,'term_set_validity'         ,(c_void_p,c_uint16,c_uint16))
+term_set_validity       = load('term_set_validity'         ,(c_void_p,c_uint16,c_uint16))
 #initializes time contract based on given parameters (see u2.dll source)
-term_init               = load(lib,'term_init'                 ,(c_void_p,c_void_p))
+term_init               = load('term_init'                 ,(c_void_p,c_void_p))
 
 FULL_COST = term_full_cost
 HALF_COST = term_half_cost
@@ -207,8 +207,8 @@ class TERM_STATIC(DumpableStructure):
   '''
   if DATE(uint16 = self.validity_limit_date).expired():
    raise TimeError('This contract has been expired')
-  #if current end_date for contract is greater than proposed end
-  #then TimeError happened
+  # if current end_date for contract is greater than proposed end date
+  # then TimeError happened
   if self.status == self.VALID_STATUS and \
      DATE(uint16 = self.validity_end_date).to_datetime() >= end:
    raise TimeError('There is no need to refill this contract')
