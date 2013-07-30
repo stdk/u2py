@@ -29,6 +29,6 @@ class version(APIHandler):
     'version': reader.version()
    })
   else:
-   answer['version'] = '.'.join(str(i) for i in __version__)
+   answer['version'] = __version__
    answer['stoplist'] = State.get_stoplist_version()
 

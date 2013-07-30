@@ -3,15 +3,13 @@ import py2exe, sys, os
 from py2exe.build_exe import py2exe as builder
 from datetime import datetime
 import glob
-
 from u2py import __version__
-VERSION = '.'.join(str(i) for i in __version__)
 
 sys.argv.append('py2exe')
 
 base_opts = [
 	("icon_resources", [(1, "icon.ico")]),
-	("version", VERSION),
+	("version", __version__),
 	("company_name", "Card Systems"),
 	("name", 'u2py' + ' (' + datetime.now().strftime("%d/%m/%Y %H:%M:%S") + ')')
 ]
@@ -41,7 +39,7 @@ setup(
  cmdclass = { 'py2exe': PackageDataCollector },
  name = "u2",
  description = "u2 service",
- version = VERSION,
+ version = __version__,
  console = [ dict([( 'script', "u2.py")] + base_opts) ],
  service = [ dict([ ('modules', ["service"]), ('cmdline', 'pywin32') ] + base_opts)],
  #zipfile = 1,

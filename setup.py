@@ -11,7 +11,7 @@ data_files = [
 
 setup(
     name='u2py',
-    version='.'.join(str(i) for i in __version__ + (2,)),
+    version = __version__ + '.2',
     author='feanor',
     author_email='std.feanor@gmail.com',
     packages=['u2py','webapi','adbk'],
