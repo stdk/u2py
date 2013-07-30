@@ -5,6 +5,7 @@ import config
 
 from u2py.interface import Reader
 from u2py.mfex import ReaderError
+from u2py.config import default_impl
 
 from process_reader import ProcessReader
 

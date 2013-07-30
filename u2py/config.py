@@ -12,6 +12,8 @@ reader_path       = [
     {'path': '\\\\.\\COM1', 'baud': 38400, 'impl':'asio-mt' }
 ]
 
+default_impl = 'asio-mt'
+
 max_journeys = 50
 journey_cost = 200
 

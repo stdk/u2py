@@ -84,10 +84,10 @@ class Reader(c_void_p):
   self._is_open = False
   if not path:
     kw = config.reader_path[0]
-    path,baud,impl = kw['path'],kw['baud'],kw.get('impl','asio-mt')
+    path,baud,impl = kw['path'],kw.get('baud',DEFAULT_BAUD),kw.get('impl',config.default_impl)
   self.path = path
   self.baud = baud if baud != None else DEFAULT_BAUD
-  self.impl = impl if impl != None else 'asio-mt'
+  self.impl = impl if impl != None else config.default_impl
 
   try:
    self.open()
@@ -132,6 +132,7 @@ class Reader(c_void_p):
    self._is_open = False
 
  def reopen(self):
+  print 'reopen'
   self.close()
   self.open()
 
