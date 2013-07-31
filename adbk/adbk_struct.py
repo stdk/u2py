@@ -242,7 +242,7 @@ class FLASHEVENT(DumpableStructure):
   self.HallDeviceID   = hall_device_id
   self.HallDeviceType = 2 # ADBK device type
   self.EventCode      = event.EventCode
-  self.ErrorCode      = event.ErrorCode
+  self.ErrorCode      = event.ErrorCode if event.ErrorCode != None else 0
   self.DataLen        = sizeof(event)
   memmove(addressof(self.EventData),addressof(event),sizeof(event))
 

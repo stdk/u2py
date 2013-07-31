@@ -66,6 +66,15 @@ class Event(object):
  LOAD_RANGE_QUERY = 'select * from {0} where id between ? and ?'
  LOAD_LAST_QUERY = 'select * from {0} order by id desc limit 0,1'
 
+ # Fields in this list should have default values in database
+ # i.e. they acquire their values during insert to db.
+ # Being specified in this list means those keys aren't listed in structure fields.
+ DEFAULT_KEYS = []
+
+ # Those field don't have default database values and should be explicitly
+ # set some value (at least to None, as Event.__init__ does).
+ # Being specified in this list means those keys aren't listed in structure fields.
+ EXTRA_KEYS = []
  registry = {}
 
  @classmethod
@@ -77,21 +86,18 @@ class Event(object):
   self.ErrorCode = error_by_exception.get(ex.__class__,WRITE)
 
  def __init__(self,**kw):
-  self.id = 0
-  self.Time = ''
-  self.ErrorCode = 0
+  [setattr(self,key,None) for key in self.EXTRA_KEYS + self.DEFAULT_KEYS]
 
-  # Fields of this specific class + generic id,Time,ErrorCode should be
+  # Fields of this specific class + EXTRA_KEYS + DEFAULT_KEYS should be
   # assignable via constructor keyword arguments, as this is the way they'll
-  # be deserialized from database.
-  # Still, only ErrorCode among those fields should be listed in self.keys,
-  # since id and Time should have default values specified in database.
-  self.keys = ['ErrorCode'] + [field_data[0] for field_data in self._fields_]
-  self.default_keys = ['id','Time']
-  [setattr(self,key,kw[key]) for key in self.keys + self.default_keys if key in kw]
+  # be deserialized from database, but DEFAULT_KEYS should not inserted into db,
+  # since there is default values for them there.
+  self.keys = [field_data[0] for field_data in self._fields_] + self.EXTRA_KEYS
+  [setattr(self,key,kw[key]) for key in kw if key in self.keys + self.DEFAULT_KEYS]
 
  def save(self,card = None):
   # only non-default fields
+  # EventCode is a special case class field, that should be explicitly set in Event descendants
   fields = ['EventCode'] + self.keys
   values = [getattr(self,field) for field in fields]
 

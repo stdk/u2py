@@ -44,7 +44,10 @@ def fill_event_from_card(event,card):
 # will be used
 class ServiceEvent(Event):
  TABLE = 'events'
+ DEFAULT_KEYS = ['id','Time']
+ EXTRA_KEYS   = ['ErrorCode']
  registry = {}
+
 
 @ServiceEvent.register
 class EVENT_WALLET_OPERATION2(ServiceEvent,DumpableStructure):
@@ -185,5 +188,5 @@ if __name__ == '__main__':
  print x
  x.save()
 
- print events.Event.load_last()
+ print events.ServiceEvent.load_last()
 
