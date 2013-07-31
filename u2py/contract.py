@@ -30,6 +30,8 @@ class DYNAMIC_A(DumpableStructure):
   other size-compatible ctypes type).
   This data will then be copied to block1, checksum will be calculated in-place
   and block1 will be copied to block2.
+  Object being commited should be able to calculate its own checksum
+  via |update_checksum| method.
   '''
   data.update_checksum()
   self.b1 = ByteArray(data)
@@ -38,19 +40,24 @@ class DYNAMIC_A(DumpableStructure):
  @classmethod
  def validate(cls, data, dynamic_class, callback):
   '''
-  Return value: (DYNAMIC_A instance, dynamic_class instance from given data)
-  Possible exceptions: CRCError when there is no way to restore dynamic data.
+   Return value: (DYNAMIC_A instance, dynamic_class instance from given data)
+   Possible exceptions: CRCError when there is no way to restore dynamic data.
 
-  Unlike other validate methods, this one requires at least three arguments instead of one:
-  `data`, `dynamic class` and `callback` are required for successfull check and
-  restoration of possible failed blocks. Unlike first two arguments, `callback`
-  requires some clarification: this paramter should contain callable that accepts
-  integer number (0 or 1), treats this number as index of failed block in DYNAMIC_A
-  reference system and reacts accordingly. This `callback` will only be called
-  in case failed block is actually present within data.
-  Usually, callback should contain something like `sector.write_block(fail_block + block_diff)`.
-  Thus, to make fail block restore operation successfull, sector should be authenticated,
-  i.e. there should be no other auth operations on this card before validating.
+   Unlike other validate methods, this one requires at least three arguments
+  instead of one: `data`, `dynamic class` and `callback` are required for
+  successfull check and restoration of possible failed blocks.
+   Unlike first two arguments, `callback` requires some clarification:
+  this parameter should contain callable that accepts integer number (0 or 1),
+  treats this number as index of failed block in DYNAMIC_A reference system
+  and reacts accordingly. This |callback| will only be called in case failed block
+  is actually present within data.
+   Usually, callback should contain something like
+                  |sector.write_block(fail_block + block_diff)|,
+  where block_diff if a difference between sector and DYNAMIC_A reference points.
+   To make fail block restore operation successfull, it is necessary to be authenticated
+  to a sector in question. Thus, caller must either ensure absence of another
+  authentication operations with card before DYNAMIC_A validation or manually
+  perform authentication whenever required.
   '''
   proxy = data.cast(cls)
   dynamic_class_instance = proxy.restore(dynamic_class, callback)
@@ -75,7 +82,7 @@ class DYNAMIC_A(DumpableStructure):
 
   This functions tries to restore dynamic contract part in memory with given business-logic:
   1. Validate block1 and block2 of dynamic part and find out its status (correct,incorrect).
-  2. If there is no correct blocks, raise CRCError.
+  2. If there are no correct blocks, raise CRCError.
   3. If both blocks are correct and their contents are the same, return None.
   4. If both blocks are correct, they should be compared with their __cmp__ to decide
      which of them is better for the passenger (currently, block with lesser transaction number is preferable).

@@ -144,7 +144,7 @@ if __name__ == "__main__":
  import transport_card
  card = Reader().scan()
 
- print init(card)
+ #print init(card)
 
  #transport_card.validate(card=card)
 

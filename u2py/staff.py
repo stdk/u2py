@@ -5,6 +5,9 @@ from ctypes import *
 from transport_card import AIDPIX
 from contract import CONTRACT_A
 
+SECTOR = 12
+KEY    = 9
+
 class STAFF_VALIDATION_INFO(BigEndianStructure):
  _pack_ = 1
  _fields_ = [
@@ -82,6 +85,12 @@ class CONTRACT0_DYNAMIC(DumpableBigEndianStructure):
     ('__',               c_uint8)
  ]
 
+ def update_checksum(self):
+  ByteArray(self).xor_calc()
+
+ def __cmp__(self,other):
+  return cmp(self.transaction,other.transaction)
+
  @classmethod
  def validate(cls,data):
   if not data.xor_check(): raise CRCError()
@@ -126,7 +135,7 @@ class PROPRIETOR_ASPP_SECTOR1_DATA(DumpableBigEndianStructure):
   return data.cast(cls)
 
 def read(card):
- sector = card.sector(num = 12, key = 9, method = 'full')
+ sector = card.sector(num = SECTOR, key = KEY, method = 'full')
  contract = CONTRACT_A.validate(sector, CONTRACT0_STATIC, CONTRACT0_DYNAMIC)
  return contract.static.to_dict()
 

@@ -251,7 +251,7 @@ if __name__ == '__main__':
  import doctest
  doctest.testmod()
 
- #reader = Reader()
+ reader = Reader()
 
- #print reader.sn()
- #print reader.version()
+ print reader.sn()
+ print reader.version()
