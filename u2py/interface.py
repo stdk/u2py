@@ -47,10 +47,6 @@ class Reader(BaseReader):
   if not self._is_open: self.open()
   return Card(self,scan = True,prev_sn = sn)
 
- def __str__(self):
-  return '<%s>' % (self.value)
- __repr__ = __str__
-
 SN5 = ByteArray(5)
 
 class SerialNumber(Structure):

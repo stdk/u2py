@@ -48,6 +48,10 @@ def load(name,args,res = c_long, time = config.time, library = Library):
  return wrapper
 
 class BaseReader(c_void_p):
+ def __str__(self):
+  return '<%s>' % (self.value)
+ __repr__ = __str__
+
  def __init__(self,path = None,baud = None,impl = None,explicit_error = False):
   '''
   Reader object can be created even if required port cannot be opened.
