@@ -7,7 +7,6 @@ import purse
 from ctypes import c_void_p,c_uint64,c_uint32,c_uint16,c_uint8,sizeof,pointer as p,POINTER as P,cast
 from datetime import datetime,timedelta
 from calendar import monthrange
-from time import clock
 from mfex import *
 
 #workaround for wrong ctypes behaviour when writing bit fields

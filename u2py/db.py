@@ -7,6 +7,10 @@ import config
 db_connection = sqlite3.connect(config.db_filename,detect_types=sqlite3.PARSE_DECLTYPES,check_same_thread = False)
 db_connection.row_factory = sqlite3.Row
 
+def register_type(name,type_obj):
+ sqlite3.register_adapter(type_obj, type_obj.__repr__)
+ sqlite3.register_converter("ASPP_TEXT", type_obj)
+
 def executescript(script):
  with db_connection as c:
   c.executescript(script)
@@ -37,18 +41,25 @@ error_by_exception = {
 MIFARE_STANDARD = 0x4
 MIFARE_ULTRALIGHT = 0x44
 
-class ASPP(ByteArray(10)):
- def __repr__(self):
-  return ''.join(["%02x" % (i) for i in self.data[0:8]][::-1])
+class ASPPMixin(object):
+ 'requires object with iterable |data| attribute at least 8 byte long'
+ def __str__(self):
+  return ''.join(["%02x" % (i) for i in self.data[7::-1]])
+
+ __repr__ = __str__
+
+ def parse(self,value):
+  [self.data.__setitem__(7-i,int(value[2*i:2*i+2],16)) for i in xrange(8)]
+
+ def __init__(self,value = None):
+  if value != None: self.parse(value)
 
  @classmethod
  def convert(cls,value):
-  ret = cls()
-  [ret.data.__setitem__(7-i,int(value[2*i:2*i+2],16)) for i in xrange(8)]
-  return ret
+  return cls(value)
 
-sqlite3.register_adapter(ASPP, ASPP.__repr__)
-sqlite3.register_converter("ASPP_TEXT", ASPP.convert)
+class ASPP10(ASPPMixin,ByteArray(10)): pass
+register_type('ASPP_TEXT',ASPP10)
 
 class Event(object):
  SAVE_QUERY = 'insert into {0}({1}) values({2})'

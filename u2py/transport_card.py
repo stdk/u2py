@@ -1,6 +1,8 @@
-from interface import Card,DumpableStructure,DumpableBigEndianStructure,ByteArray,DATE
+from interface_basis import ByteArray,DATE,DumpableStructure,DumpableBigEndianStructure
+from interface import Card
 from mfex import *
 from ctypes import c_uint64,c_uint32,c_uint16,c_uint8,POINTER as P,pointer as p,Structure,cast,sizeof
+from db import ASPPMixin
 from events import EVENT_CONTRACT_ZALOG
 from stoplist import Stoplist
 from datetime import datetime,timedelta
@@ -12,23 +14,6 @@ EMIT_SECTOR = 1
 EMIT_KEY    = 2
 DIRTK_SECTOR = 2
 DIRTK_KEY    = 3
-
-class ASPPMixin(object):
- 'requires object with iterable data attribute with at least 8 length'
- def __str__(self):
-  return ''.join(["%02x" % (i) for i in self.data[8::-1]])
-
- __repr__ = lambda self: '<' + str(self) + '>'
-
- def parse(self,value):
-  [self.data.__setitem__(7-i,int(value[2*i:2*i+2],16)) for i in xrange(8)]
-
- def __init__(self,value = None):
-  if value != None: self.parse(value)
-
- @classmethod
- def convert(cls,value):
-  return cls(value)
 
 class ASPP(ASPPMixin,ByteArray(8)): pass
 

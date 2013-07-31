@@ -1,6 +1,6 @@
 from interface_basis import DumpableStructure
 from ctypes import c_uint8,c_uint16,c_uint32,c_uint64,sizeof
-from db import Event,ASPP,executescript
+from db import Event,ASPP10,executescript
 import config
 
 executescript("""
@@ -56,7 +56,7 @@ class EVENT_WALLET_OPERATION2(ServiceEvent,DumpableStructure):
     ('UserCardType',      c_uint16),
     ('BitMapVer',         c_uint8),
     ('UserCardSN',        c_uint64),
-    ('UserASPPSN',        ASPP),
+    ('UserASPPSN',        ASPP10),
     ('CashCardSN',        c_uint32),
     ('TransactionType',   c_uint8),
     ('Amount',            c_uint32),
@@ -83,7 +83,7 @@ class EVENT_CONTRACT_ADD2(ServiceEvent,DumpableStructure):
     ('UserCardType',           c_uint16),
     ('BitMapVer',              c_uint8),
     ('UserCardSN',             c_uint64),
-    ('UserASPPSN',             ASPP),
+    ('UserASPPSN',             ASPP10),
     ('AID',                    c_uint16),
     ('PIX',                    c_uint16),
     ('Value',                  c_uint32),#ContractValue
@@ -109,7 +109,7 @@ class EVENT_CONTRACT(ServiceEvent,DumpableStructure):
  _fields_ = [
     ('EventVer',            c_uint8),
     ('UserCardSN',          c_uint64),
-    ('UserASPPSN',          ASPP),
+    ('UserASPPSN',          ASPP10),
     ('CashCardSN',          c_uint32),
     ('TransactionType',     c_uint8), #CodeEvent
     ('AID',                 c_uint16),
@@ -136,7 +136,7 @@ class EVENT_CONTRACT_ZALOG(ServiceEvent,DumpableStructure):
     ('EventVer',            c_uint8),
     ('CashCardSN',          c_uint32),
     ('UserCardSN',          c_uint64),
-    ('UserASPPSN',          ASPP),
+    ('UserASPPSN',          ASPP10),
     ('TransactionType',     c_uint8), #CodeEvent
     ('Value',               c_uint32),#MortValue
     ('GlobalTransactions',  c_uint16) #TCTransactionNumber
@@ -159,7 +159,7 @@ class EVENT_ENCASHMENT(ServiceEvent,DumpableStructure):
  _fields_ = [
     ('EventVer',            c_uint8),
     ('CashCardSN',          c_uint32),
-    ('CashASPPSN',          ASPP),
+    ('CashASPPSN',          ASPP10),
     ('Amount',              c_uint32),
     ('Value',               c_uint32) # TagAmount
  ]
@@ -167,7 +167,7 @@ class EVENT_ENCASHMENT(ServiceEvent,DumpableStructure):
  def __init__(self,**kw):
   self.EventVer = 2
   self.CashCardSN = config.cash_card_sn
-  self.CashASPPSN = ASPP.convert(config.cash_card_aspp)
+  self.CashASPPSN = ASPP10(config.cash_card_aspp)
   Event.__init__(self,**kw)
 
 if __name__ == '__main__':
