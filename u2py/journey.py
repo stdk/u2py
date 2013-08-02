@@ -141,12 +141,11 @@ def init(card,deposit):
  sector = card.sector(num=SECTOR,key=0,enc=ENCRYPTION,read=False)
  sector.data = ByteArray(jsector)
 
- event = EVENT_CONTRACT(card,AID = AID,PIX = PIX)
+ event = EVENT_CONTRACT(card, AID = AID, PIX = PIX, TransactionType = 0)
 
  try:
   sector.write()
   sector.set_trailer(KEY)
-
   register_contract(card,SECTOR,AID,PIX)
  except Exception as e: event.set_error_code(e); raise
  finally: event.save(card)
@@ -155,8 +154,15 @@ def remove(card):
  from transport_card import validate,set_deposit,clear,register_contract
 
  validate(card)
- clear(card,sectors = [(SECTOR,KEY,'static')])
- register_contract(card,SECTOR,0,0)
+
+ event = EVENT_CONTRACT(card, AID = AID, PIX = PIX, TransactionType = 1)
+
+ try:
+  clear(card,sectors = [(SECTOR,KEY,'static')])
+  register_contract(card,SECTOR,0,0)
+ except Exception as e: event.set_error_code(e); raise
+ finally: event.save(card)
+
  set_deposit(card,0)
 
 def read(card):

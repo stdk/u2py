@@ -343,7 +343,7 @@ def init(card,aid,pix,deposit):
  term_init(p(static_sector.data),p(TERM_INIT(aid,pix)))
  static_sector.data.crc16_calc(low_endian = 1)
 
- event = EVENT_CONTRACT(card,AID = aid,PIX = pix)
+ event = EVENT_CONTRACT(card, AID = aid, PIX = pix, TransactionType = 0)
  try:
   static_sector.write()
   static_sector.set_trailer(KEY, mode = 'dynamic')
@@ -362,8 +362,16 @@ def remove(card):
  from transport_card import validate,set_deposit,register_contract,clear
 
  validate(card)
- clear(card,[(STATIC,KEY,'dynamic'),(DYNAMIC,KEY,'dynamic')])
- register_contract(card,STATIC,0,0)
+
+ aidpix = card.contract_list[0] if len(card.contract_list) else 0
+
+ event = EVENT_CONTRACT(card, AID = aidpix >> 12, PIX = aidpix & 0xFFF, TransactionType = 1)
+ try:
+  clear(card,[(STATIC,KEY,'dynamic'),(DYNAMIC,KEY,'dynamic')])
+  register_contract(card,STATIC,0,0)
+ except Exception as e: event.set_error_code(e); raise
+ finally: event.save(card)
+
  set_deposit(card,0)
 
 def test():

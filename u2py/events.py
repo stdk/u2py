@@ -1,6 +1,8 @@
-from interface_basis import DumpableStructure
+from interface_basis import DumpableStructure,ByteArray
 from ctypes import c_uint8,c_uint16,c_uint32,c_uint64,sizeof
-from db import Event,ASPP10,executescript
+from db import Event,ASPPMixin,executescript,register_db_type
+from card_event import CardEvent
+from mfex import *
 import config
 
 executescript("""
@@ -27,6 +29,9 @@ CREATE TABLE if not exists events (
 );
 """)
 
+@register_db_type('ASPP_TEXT')
+class ASPP10(ASPPMixin,ByteArray(10)): pass
+
 def fill_event_from_card(event,card):
  event.CashCardSN = config.cash_card_sn
  event.EventVer = 1
@@ -39,14 +44,50 @@ def fill_event_from_card(event,card):
   event.AID = contract >> 12;
   event.PIX = contract & 0xFFF;
 
+NO_RESOURCE    = 1
+CONTRACT_TIME  = 2
+UNKNOWN_CARD   = 3
+READ           = 4
+WRITE          = 5
+STATUS         = 6
+TIMEOUT        = 7
+NO_CONTRACT    = 8
+RESOURCE_LIMIT = 9
+
+error_by_exception = {
+    SectorWriteError: WRITE,
+    SectorReadError:  READ,
+    TimeError:        CONTRACT_TIME,
+    CRCError:         NO_CONTRACT,
+    DataError:        NO_CONTRACT,
+    StatusError:      STATUS,
+    ValueError:       NO_RESOURCE
+ }
+
 # base storage class defines its table name and registry for its events
 # when there is not registry defined, base class (i.e. Event) registry
 # will be used
 class ServiceEvent(Event):
- TABLE = 'events'
- DEFAULT_KEYS = ['id','Time']
- EXTRA_KEYS   = ['ErrorCode']
+ _table_ = 'events'
+ _default_ = ['id','Time']
+ _extra_   = ['ErrorCode']
  registry = {}
+
+ def __init__(self,*args,**kw):
+  self.ErrorCode = 0
+  super(ServiceEvent,self).__init__(*args,**kw)
+
+ def set_error_code(self,ex):
+  self.ErrorCode = error_by_exception.get(ex.__class__,WRITE)
+
+ def save(self,card = None):
+  device_transaction = super(ServiceEvent,self).save()
+
+  if card and not getattr(self,'ErrorCode',None):
+   try: CardEvent(self,device_transaction).save(card)
+   except MFEx: pass
+
+  return device_transaction
 
 
 @ServiceEvent.register
