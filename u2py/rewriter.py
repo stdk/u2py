@@ -1,4 +1,4 @@
-﻿from interface import load,lib,Reader,ByteArray
+﻿from interface import load,Reader,ByteArray
 from interface import reader_get_sn,reader_get_version
 from ctypes import c_char_p,c_char,c_uint32
 import time
@@ -10,9 +10,9 @@ from PyQt4.QtCore import pyqtSignal,Qt
 from pkg_resources import resource_stream
 from config import default_impl
 
-reader_update_start      = load(lib,'reader_update_start'       ,(Reader,))
-reader_sync              = load(lib,'reader_sync'               ,(Reader,))
-reader_send_package      = load(lib,'reader_send_package'       ,(Reader,c_char_p,c_uint32))
+reader_update_start      = load('reader_update_start'       ,(Reader,))
+reader_sync              = load('reader_sync'               ,(Reader,))
+reader_send_package      = load('reader_send_package'       ,(Reader,c_char_p,c_uint32))
 
 class Widget(QMainWindow):
  progressChanged = pyqtSignal(int)
