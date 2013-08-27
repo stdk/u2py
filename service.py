@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import win32serviceutil
 import win32service
 import win32event
@@ -12,6 +13,8 @@ import multiprocessing
 executable = os.path.join(os.path.dirname(sys.executable), 'u2.exe')
 multiprocessing.set_executable(executable)
 del executable
+
+BASE_PROCESS_WAIT_TIME = 2
 
 class logger(object):
  def __init__(self,out):
@@ -40,8 +43,12 @@ class ServiceLauncher(win32serviceutil.ServiceFramework):
 
   self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
   self.server_process.send_signal(signal.CTRL_BREAK_EVENT)
-  #os.kill(self.server_process.pid, signal.CTRL_BREAK_EVENT)
-  #self.server.stop()
+  time.sleep(BASE_PROCESS_WAIT_TIME)  
+  if self.server_process.poll() == None:
+   servicemanager.LogInfoMsg('\nMain process still running despite the break signal.')
+   self.server_process.kill()
+
+   #self.server.stop()
 
  def SvcDoRun(self):
   from subprocess import Popen,CREATE_NEW_PROCESS_GROUP

@@ -20,7 +20,6 @@ class TestBase(unittest.TestCase):
   f = urllib2.urlopen('http://%s:%i%s' % (HOST,PORT,api_url),data = json_request)
 
   json_response = json.loads(f.read())
-  #print >> sys.stderr, json.dumps(json_response,indent = 4)
 
   if check:
    if error != None:

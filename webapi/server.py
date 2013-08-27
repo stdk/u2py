@@ -1,9 +1,10 @@
 ﻿# -*- coding: utf-8 -*-
 import os
 import sys
+import time
 import logging
 
-from gevent import monkey; monkey.patch_all(socket = False)
+from gevent import monkey; monkey.patch_all(socket = False, time = False)
 from gevent.wsgi import WSGIServer
 
 import web
@@ -33,14 +34,16 @@ class Server(WSGIServer):
    [reader.open() for reader in APIHandler.readers]
 
    def signal_handler(sgn,frame):
-    logging.debug('Stop signal catched.')
+    logging.debug('Stop signal catched[%i].' % (sgn))
+    #for i in range(3):
+    # logging.debug('stop[%i]' % (i))
+    # time.sleep(2)
     self.stop()
+    logging.debug('Web-server stopped.')
   
-   # signal handler installation depends on os
-   if hasattr(os.sys, 'winver'):
-    signal.signal(signal.SIGBREAK, signal_handler)
-   else:
-    signal.signal(signal.SIGTERM, signal_handler)   
+   signal.signal(signal.SIGBREAK, signal_handler) #maps to CTRL_BREAK_EVENT on windows
+   signal.signal(signal.SIGINT, signal_handler)   #maps to CTRL_C_EVENT for windows
+   signal.signal(signal.SIGTERM, signal_handler)
    
    WSGIServer.serve_forever(self,*args,**kw)
   except KeyboardInterrupt:
