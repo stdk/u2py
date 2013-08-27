@@ -5,9 +5,7 @@ import config
 
 from u2py.interface import Reader
 from u2py.mfex import ReaderError
-from u2py.config import default_impl
-
-from process_reader import ProcessReader
+from process_reader import ProcessReader,IPCError
 
 __all__ = ['reader_detect','reader_save','reader_load']
 
@@ -33,6 +31,15 @@ class reader_detect(APIHandler):
   except (ReaderError,IOError):
    return None
 
+ @staticmethod
+ def identify_port_remote(port):
+  try:
+   with closing(ProcessReader(path = port)) as reader:
+    answer = reader.apply('webapi.version.version')
+    return port,answer['version'],answer['sn']
+  except (KeyError,IPCError):
+   return None
+
  def POST(self, answer={}, **kw):
   from serial.tools import list_ports
 
@@ -41,7 +48,7 @@ class reader_detect(APIHandler):
   for reader in backup_readers:
    reader.close()
 
-  readers_info = filter(lambda x:x,[self.identify_port('\\\\.\\' + com[0])
+  readers_info = filter(lambda x:x,[self.identify_port_remote('\\\\.\\' + com[0])
                                     for com in list_ports.comports()])
   readers_info.sort(key = lambda (port,_1,_2): port)
   answer['readers'] = readers_info

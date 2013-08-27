@@ -1,13 +1,24 @@
 ﻿# -*- coding: utf-8 -*-
+import os
+import sys
+import logging
+
 from gevent import monkey; monkey.patch_all(socket = False)
 from gevent.wsgi import WSGIServer
 
-import os
 import web
 import handlers
+import signal
 
-import sys
 if sys.platform == 'win32':
+ # CTRL_BREAK_EVENT can only be catched with console present.
+ import win32console
+ try:
+  win32console.AllocConsole()
+ except:
+  # When running from cmd.exe, console is already present
+  print 'Console already allocated'
+ 
  reload(sys)
  sys.setdefaultencoding('cp1251')
 
@@ -16,9 +27,21 @@ class Server(WSGIServer):
   from handlers_base import APIHandler
   from process_reader import ProcessReader
   from u2py.config import reader_path
+
   try:
    APIHandler.readers = [ProcessReader(**reader_kw) for reader_kw in reader_path]
    [reader.open() for reader in APIHandler.readers]
+
+   def signal_handler(sgn,frame):
+    logging.debug('Stop signal catched.')
+    self.stop()
+  
+   # signal handler installation depends on os
+   if hasattr(os.sys, 'winver'):
+    signal.signal(signal.SIGBREAK, signal_handler)
+   else:
+    signal.signal(signal.SIGTERM, signal_handler)   
+   
    WSGIServer.serve_forever(self,*args,**kw)
   except KeyboardInterrupt:
    pass

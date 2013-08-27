@@ -2,7 +2,7 @@
 import webapi.config
 
 # Хост и порт вебсервера
-webapi.config.host = '127.0.0.1'
+webapi.config.host = '0.0.0.0'
 webapi.config.port = 1000
 
 # Настройки требовательности команд API к наличию сервера.
@@ -16,6 +16,11 @@ webapi.config.notifier_poll_timeout = 0.5
 
 # Выводить стек вызовов в числе данных о возникшей ошибке
 webapi.config.error_with_traceback = True
+
+# Максимально допустимое время для выполнения отдельной команды удаленным процессом.
+# При его превышении будет сгенерирована ошибка IPCError, а не ответивший вовремя процесс
+# будет принудительно остановлен (и перезапущен при подаче новой команды).
+webapi.config.ipc_timeout = 5.0
 
 # Настройки логирования
 import logging.config
@@ -52,11 +57,11 @@ import u2py.config
 # Индекс считывателей в этом списке используется в дальнейшем для
 # указания считывателя для выполнения команды API
 u2py.config.reader_path     = [
-    {'path': '\\\\.\\COM1', 'baud': 38400,  'impl': 'asio-mt'},
+    #{'path': '\\\\.\\COM7', 'baud': 38400,  'impl': 'asio-mt'}
 ]
 
 # Путь к библиотеке взаимодействия со считывателем
-u2py.config.lib_filename    = './u2.dll'
+u2py.config.lib_filename    = 'u2.dll'
 
 # Путь к базе данных в формате SQLite, которая хранит информацию о работе сервиса
 u2py.config.db_filename     = 'db.db3'
