@@ -58,9 +58,33 @@ class CardEvent(DumpableStructure):
     ('code_event',    c_uint32,4),
     ('price',         c_uint32,20),
     ('_checksum',     c_uint32,8)
+
+##    old format
+##    ('_date',         c_uint64,14),
+##    ('_time',         c_uint64,16),
+##    ('aid',           c_uint64,12),
+##    ('place',         c_uint64,12),
+##    ('device_type',   c_uint64,4),
+##    ('device_number', c_uint64,6),
+##    ('transaction',   c_uint16),
+##    ('event_code',    c_uint32,6),
+##    ('price',         c_uint32,24),
+##    ('_reserved',     c_uint32,2),
+##    ('_checksum',     c_uint8)
+
  ]
 
- _dumpable_ = ['is_checksum_valid']
+## def date(self):
+##  return DATE(uint16 = self._date)
+##
+## def time(self):
+##  return TIME(uint16 = self._time)
+
+ _dumpable_ = [
+    'is_checksum_valid',
+##    'date',
+##    'time'
+ ]
 
  def __init__(self,event,transaction):
   self.id = 0x84
@@ -133,6 +157,7 @@ if __name__ == '__main__':
 
  card = Reader().scan()
 
- transport_card.validate(card=card)
+ print AppStatus.validate(card.sector(num = APP_SECTOR,key = APP_KEY).data)
+ #transport_card.validate(card=card)
 
  print read(card)

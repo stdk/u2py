@@ -10,3 +10,5 @@ error_with_traceback = True
 
 read_api_requires_server = False
 write_api_requires_server = True
+
+service_mode = 'inside'

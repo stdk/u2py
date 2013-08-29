@@ -19,7 +19,7 @@ if sys.platform == 'win32':
  except:
   # When running from cmd.exe, console is already present
   print 'Console already allocated'
- 
+
  reload(sys)
  sys.setdefaultencoding('cp1251')
 
@@ -35,16 +35,16 @@ class Server(WSGIServer):
 
    def signal_handler(sgn,frame):
     logging.debug('Stop signal catched[%i].' % (sgn))
-    #for i in range(3):
-    # logging.debug('stop[%i]' % (i))
-    # time.sleep(2)
     self.stop()
     logging.debug('Web-server stopped.')
-  
-   signal.signal(signal.SIGBREAK, signal_handler) #maps to CTRL_BREAK_EVENT on windows
-   signal.signal(signal.SIGINT, signal_handler)   #maps to CTRL_C_EVENT for windows
-   signal.signal(signal.SIGTERM, signal_handler)
-   
+
+   try:
+    signal.signal(signal.SIGBREAK, signal_handler) #maps to CTRL_BREAK_EVENT on windows
+    signal.signal(signal.SIGINT, signal_handler)   #maps to CTRL_C_EVENT for windows
+    signal.signal(signal.SIGTERM, signal_handler)
+   except ValueError:
+    print 'Signals only works in main thread'
+
    WSGIServer.serve_forever(self,*args,**kw)
   except KeyboardInterrupt:
    pass
