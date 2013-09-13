@@ -39,7 +39,8 @@ class Server(WSGIServer):
     logging.debug('Web-server stopped.')
 
    try:
-    signal.signal(signal.SIGBREAK, signal_handler) #maps to CTRL_BREAK_EVENT on windows
+    if hasattr(signal,'SIGBREAK'):
+     signal.signal(signal.SIGBREAK, signal_handler) #maps to CTRL_BREAK_EVENT on windows
     signal.signal(signal.SIGINT, signal_handler)   #maps to CTRL_C_EVENT for windows
     signal.signal(signal.SIGTERM, signal_handler)
    except ValueError:
