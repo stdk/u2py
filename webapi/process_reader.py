@@ -9,7 +9,7 @@ __all__ = ['ProcessReader']
 IPC_TIMEOUT = config.ipc_timeout
 
 def logging_configurator(reader_path):
- title = 'reader_{0}.log'.format(path.basename(reader_path))
+ title = 'reader_{0}.log'.format(path.basename(reader_path).replace(':','~'))
  def closure(config):
   basedir = path.dirname(config['handlers']['u2']['filename'])
   config['handlers']['u2']['filename'] = path.join(basedir,title)
