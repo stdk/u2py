@@ -10,6 +10,7 @@ import logging
 IO_ERROR           = 0x0E000001
 
 DEFAULT_BAUD       = 38400
+DEFAULT_PARITY     = 0
 DEBUG              = False
 
 Library = cdll.LoadLibrary(config.lib_filename)
@@ -29,12 +30,15 @@ def load(name,args,res = c_long, time = config.time, library = Library):
    ret = function(*params)
    time_elapsed = time() - begin_time
 
-   logging.debug(' | '.join( ["%6.4f" % (time_elapsed),name,strParams(params),hex(ret)] ))
+   logging.debug(' | '.join( ["%6.4f | %08X" % (time_elapsed,ret),name,strParams(params)] ))
 
    return ret
   except Exception:
    import sys
-   print name,sys.exc_info()
+   import traceback
+   logging.error('Exception occured when executing function: %s' % (name,))
+   for line in traceback.format_exception(*sys.exc_info()):
+    logging.error(line.replace('\n',': '))
   finally:
 
    if config.reopen_on_io_error and ret == IO_ERROR: #special case for unavailable reader
@@ -49,10 +53,11 @@ def load(name,args,res = c_long, time = config.time, library = Library):
 
 class BaseReader(c_void_p):
  def __str__(self):
-  return '<%s>' % (self.value)
+  return '<%X>' % (self.value if self.value else -1)
  __repr__ = __str__
 
- def __init__(self,path = None,baud = None,impl = None,explicit_error = False):
+ def __init__(self,path = None,baud = None,parity = None,impl = None,
+              explicit_error = False):
   '''
   Reader object can be created even if required port cannot be opened.
   It will try to fix itself afterwards.
@@ -62,9 +67,12 @@ class BaseReader(c_void_p):
   self._is_open = False
   if not path:
     kw = config.reader_path[0]
-    path,baud,impl = kw['path'],kw.get('baud',DEFAULT_BAUD),kw.get('impl',config.default_impl)
+    path,baud,parity,impl = (kw['path'],kw.get('baud',DEFAULT_BAUD),
+                             kw.get('parity',DEFAULT_PARITY),
+                             kw.get('impl',config.default_impl))
   self.path = path
   self.baud = baud if baud != None else DEFAULT_BAUD
+  self.parity = parity if parity != None else DEFAULT_PARITY
   self.impl = impl if impl != None else config.default_impl
 
   try:
@@ -98,9 +106,9 @@ class BaseReader(c_void_p):
 
  def open(self):
   'Opens reader on a given port and raises ReaderError otherwise.'
-  if DEBUG: print 'Reader.open',(self.path,self.baud,self.impl)
+  if DEBUG: print 'Reader.open',(self.path,self.baud,self.parity,self.impl)
   if not self._is_open:
-   if reader_open(self.path,self.baud,self.impl,self): raise ReaderError()
+   if reader_open(self.path,self.baud,self.parity,self.impl,self): raise ReaderError()
    self._is_open = True
 
  def close(self):
@@ -187,7 +195,7 @@ def ByteArray(obj,crc_LE = 1,cache = {},copy = False):
 crc16_check             = load('crc16_check'               ,(c_void_p,c_uint32,c_uint8,))
 crc16_calc              = load('crc16_calc'                ,(c_void_p,c_uint32,c_uint8,))
 
-reader_open             = load('reader_open'               ,(P(c_char),c_uint32,P(c_char),P(BaseReader),))
+reader_open             = load('reader_open'               ,(P(c_char),c_uint32,c_uint8,P(c_char),P(BaseReader),))
 reader_close            = load('reader_close'              ,(BaseReader,))
 
 class Dumpable(object):
