@@ -23,6 +23,12 @@ webapi.config.error_with_traceback = True
 webapi.config.ipc_timeout = 5.0
 
 # Настройки логирования
+import os
+
+app_data_folder = os.path.join(os.environ['APPDATA'],'u2')
+if not os.path.exists(app_data_folder):
+ os.makedirs(app_data_folder)
+
 import logging.config
 logging.config.dictConfig({
  'version': 1,    # Configuration schema in use; must be 1 for now
@@ -36,7 +42,7 @@ logging.config.dictConfig({
   'u2': {
    'backupCount': 10,                               # количество файлов в ротации
    'class': 'logging.handlers.RotatingFileHandler', # метод логирования
-   'filename': 'u2.log',                            # базовое имя файла
+   'filename': os.path.join(app_data_folder,'u2.log'),   # имя файла
    'formatter': 'standard',
    'level': 'DEBUG',                                # уровень отладочных сообщений
    'maxBytes': 10000000                             # размер файла, после достижения которого будет выполнена ротация
@@ -57,14 +63,17 @@ import u2py.config
 # Индекс считывателей в этом списке используется в дальнейшем для
 # указания считывателя для выполнения команды API
 u2py.config.reader_path     = [
-    #{'path': '\\\\.\\COM7', 'baud': 38400,  'impl': 'asio-mt'}
+	#{'path': '10.0.2.195:1200', 'baud': 38400,  'impl': 'tcp'}
+    #{'path': '\\\\.\\COM7', 'baud': 38400,  'impl': 'asio-mt'},
+	{'path': '\\\\.\\COM3', 'baud': 38400,  'impl': 'asio-mt'},
+	#{'path': '\\\\.\\COM1', 'baud': 38400,  'impl': 'blockwise'}
 ]
 
 # Путь к библиотеке взаимодействия со считывателем
 u2py.config.lib_filename    = 'u2.dll'
 
 # Путь к базе данных в формате SQLite, которая хранит информацию о работе сервиса
-u2py.config.db_filename     = 'db.db3'
+u2py.config.db_filename     = os.path.join(app_data_folder,'db.db3')
 
 # Идентификатор станции метрополитена, где расположен киоск
 u2py.config.hall_id         = 100
