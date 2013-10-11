@@ -8,7 +8,6 @@ from PyQt4 import QtGui,QtCore,uic
 from PyQt4.QtGui import QFileDialog,QMainWindow,QStandardItemModel,QStandardItem, QApplication, QCursor
 from PyQt4.QtCore import pyqtSignal,Qt
 from pkg_resources import resource_stream
-from config import default_impl
 
 reader_update_start      = load('reader_update_start'       ,(Reader,))
 reader_sync              = load('reader_sync'               ,(Reader,))
@@ -61,7 +60,7 @@ class Widget(QMainWindow):
 
   #Blockwise and bytewise implementations have issues with default comm timeouts
   #that can lead to spontaneous host computer reboot. Using asio instead.
-  self.reader = Reader(path,baud,default_impl,explicit_error = True)
+  self.reader = Reader(path = path, baud = baud, explicit_error = True)
 
   if not self.reader.is_open():
    return self.ui.statusbar.showMessage('Cannot open port')
