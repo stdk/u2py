@@ -53,8 +53,8 @@ setup(
  options = {
   'py2exe':{
    'packages':'encodings',
-   "includes":"win32com,win32service,win32serviceutil,win32event,servicemanager,greenlet,sip,distutils",
-   'excludes': [ 'config','email','distutils','tcl','Tkconstants', 'Tkinter', 'pydoc', 'doctest', 'test','cherrypy'],
+   "includes":"setuptools,pkg_resources,greenlet,win32com,win32service,win32serviceutil,win32event,servicemanager,sip",
+   'excludes': [ 'config','email','tcl','Tkconstants', 'Tkinter', 'pydoc', 'doctest', 'test','cherrypy' ],
    'dll_excludes': ['tcl84.dll','tk84.dll','MSVCP90.dll'],
    'optimize': '2',
    'bundle_files' : 2,
