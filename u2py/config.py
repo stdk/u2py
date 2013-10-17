@@ -9,7 +9,7 @@ lib_filename      = os.path.join(os.path.dirname(__file__),'..',lib_base_filenam
 db_filename       = 'db.db3'
 
 reader_path       = [
-    {'path': '\\\\.\\COM1', 'baud': 38400, 'impl':'asio-mt' }
+    {'path': '\\\\.\\COM3', 'baud': 38400, 'impl':'asio-mt' }
 ]
 
 default_impl = 'asio-mt'
@@ -23,7 +23,7 @@ hall_id           = 100
 
 
 try:
- if platform != 'linux2': raise #for now linux ip detection has been disabled
+ if platform == 'linux2': raise #for now linux ip detection has been disabled
  import socket
  hall_device_id   = int(socket.gethostbyname(socket.gethostname()).split('.')[-1]) - 10
 except:
