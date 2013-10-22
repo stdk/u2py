@@ -38,4 +38,6 @@ cash_card_sn      = 0
 cash_card_aspp    = '0' * 16
 
 reopen_on_io_error = True
+raise_on_io_error  = True
+
 

@@ -18,13 +18,18 @@ Library = cdll.LoadLibrary(config.lib_filename)
 def strParams(params):
  return '( {0} )'.format(', '.join( [str(param) for param in params] ))
 
-def load(name,args,res = c_long, time = config.time, library = Library):
+def load(name,args,res = c_long, time = config.time, library = Library, check_params = None):
  function = library[name]
  function.argtypes = args
  function.restype = res
  def wrapper(*params):
   begin_time = time()
 
+  if check_params is not None:
+   ret = check_params(params)
+   if ret is not None:
+    return ret
+  
   ret = None
   try:
    ret = function(*params)
@@ -47,7 +52,8 @@ def load(name,args,res = c_long, time = config.time, library = Library):
     try: params[0].reopen()
     except: pass
     #still, IOError should be raised to notify high level about error
-    raise IOError('{0}({1}: {2}'.format(name,strParams(params),hex(ret)))
+    if config.raise_on_io_error:
+     raise IOError('{0}({1}: {2}'.format(name,strParams(params),hex(ret)))
 
  return wrapper
 
