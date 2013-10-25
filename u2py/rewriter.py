@@ -144,6 +144,8 @@ class Widget(QMainWindow):
 
    size = (ord(firmware[0]) << 8) + ord(firmware[1]) + 2
    ret = reader_send_package(reader,firmware[2:size],size-4)
+   if ret:
+    raise Exception('reader_send_package returned %i' % (ret,))
    progress = 100 - 100 * len(firmware) / full_size
    self.progressChanged.emit(progress)
    firmware = firmware[size:]
