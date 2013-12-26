@@ -241,10 +241,14 @@ if __name__ == "__main__":
  from interface import Reader
 
  card = Reader().scan()
- validate(card)
+ #validate(card)
  print card
 
- #print clear(card)
+ s = 'static'
+ d = 'dynamic'
+ print clear(card, [(1, 2,s),( 2,3,s),( 3,7,s),( 4,7,s),
+                    (5, 6,s),( 9,4,s),(10,5,s),(11,8,s),
+                    (6,21,s),(12,9,s),(13,27,d),(14,27,d)])
  #init(card,'0123456789ABCDEF',DEPOSIT_VALUE)
 
  #set_deposit(card,700)

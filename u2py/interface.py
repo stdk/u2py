@@ -33,7 +33,7 @@ class Reader(BaseReader):
 
  def reset_field(self):
   if not self.is_open(): raise ReaderError()
-  if reader_field_on(self):
+  if reader_field_off(self) or reader_field_on(self):
    raise ReaderError()
 
  def scan(self, sn = None):
@@ -45,9 +45,12 @@ class Reader(BaseReader):
   it gives WrongCardError when card serial number in fiels != given sn.
   '''
   if not self._is_open: self.open()
+  self.reset_field()
   return Card(self,scan = True,prev_sn = sn)
 
 SN5 = ByteArray(5)
+
+SL3_SAK = 0x20 # Mifare Plus SL3 unique feature
 
 class SerialNumber(Structure):
  _pack_ = 1
@@ -67,6 +70,10 @@ class SerialNumber(Structure):
 
  def sn8(self):
   return self.sn7() + (self.len << 56)
+
+ @property
+ def is_SL3(self):
+  return self.sak == SL3_SAK
 
  def __str__(self):
   return str(self.sn)
@@ -174,6 +181,9 @@ class Sector(DumpableStructure):
   if card_block_write(self.card.reader,self,i,enc): raise SectorWriteError(self.num,i)
 
  def set_trailer(self,key,mode=None):
+  if self.card.sn.is_SL3: # Mifare Plus SL3 cards do not require trailer setup
+   return
+
   if not mode: mode = 'static'
   self.set_mode(mode)
   self.key = key
@@ -251,3 +261,5 @@ if __name__ == '__main__':
 
  print reader.sn()
  print reader.version()
+
+ print reader.scan().sector()
