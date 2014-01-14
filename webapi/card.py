@@ -2,6 +2,7 @@
 import config
 
 from u2py import transport_card
+from u2py import purse
 
 class card_init(APIHandler):
  url = '/api/card/init'
@@ -77,13 +78,19 @@ class card_plus_perso(APIHandler):
 
   card.mfplus_personalize()
 
+class InequalityError(Exception):
+ def __init__(self, message):
+  super(InequalityError,self).__init__(message)
+  
 class config_edrpou(APIHandler):
  url = '/api/config/edrpou'
 
  def GET(self, answer={}):
   answer.update({
    'request': {
-        'edrpou': 'строка, до 10 цифр, код предприятия в BCD-формате'
+        'reader': 'число, индекс считывателя бесконтактных карточек, настройка ЕДРПОУ будет применена только к процессу этого считывателя',
+        'edrpou': 'строка, до 10 цифр, код предприятия в BCD-формате',
+		'check': 'опциональный параметр, логическое значение указывающее режим работы команды'
     },
     'response': {
         'sn': 'Серийный номер бесконтактной карточки, число',
@@ -91,12 +98,41 @@ class config_edrpou(APIHandler):
     }
   })
 
-  def POST(self, edrpou, answer={}):
-   edrpou = edrpou.rjust(10, '0')
-   edrpou = []
-
-   transport_card.EDRPOU = [int(edrpou[2*i:2*i+2], 16) for i in xrange(5)]
-
+ def POST(self, reader, edrpou, check=False, answer={}, **kw):
+  edrpou = edrpou.rjust(10, '0')
+  edrpou = [int(edrpou[2*i:2*i+2], 16) for i in xrange(5)]
+  
+  if check and edrpou != transport_card.EDRPOU:
+   raise InequalityError('EDRPOU values are not equal')
+  else:  
    print transport_card.EDRPOU
+   transport_card.EDRPOU = edrpou
+   
+class purse_refill(APIHandler):
+ url = '/api/purse/refill'
 
-   assert(len(transport_cardd.EDROU), 5)
+ need_server = config.write_api_requires_server
+
+ def GET(self,answer={}):
+  answer.update({
+    'request': {
+        'reader' : 'число, индекс считывателя бесконтактных карточек',
+        'amount' : 'сумма, на которую необходимо пополнить кошелек, в копейках',
+        'sn'     : 'опциональный параметр; cерийный номер требуемой бесконтактной карточки, число',
+    },
+    'response': {
+        'sn': 'Серийный номер бесконтактной карточки, число',
+        'aspp': 'АСПП номер транспортной карточки вида 0000000000000000, строка',
+        "error": 'Информация об ошибке, возникшей при выполнении вызова API.',
+    }
+  })
+
+ def POST(self, reader, amount, sn = None, answer={}, **kw):
+   card = reader.scan(sn)
+   answer['sn'] = card.sn.sn7()
+   transport_card.validate(card)
+   answer['aspp'] = str(card.aspp)
+
+   purse.change_value(card, int(amount))
+   
+print purse_refill

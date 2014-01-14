@@ -15,7 +15,7 @@ EMIT_KEY    = 2
 DIRTK_SECTOR = 2
 DIRTK_KEY    = 3
 
-EDRPOU= [0x00, 0x03, 0x32, 0x89, 0x13]  # default Kiev subway edrpou
+EDRPOU = [0x00, 0x03, 0x32, 0x89, 0x13]  # default Kiev subway edrpou
 
 class ASPP(ASPPMixin,ByteArray(8)): pass
 
