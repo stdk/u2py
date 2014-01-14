@@ -64,9 +64,9 @@ import u2py.config
 # указания считывателя для выполнения команды API
 u2py.config.reader_path     = [
 	#{'path': '10.0.2.195:1200', 'baud': 38400,  'impl': 'tcp'}
-    #{'path': '\\\\.\\COM7', 'baud': 38400,  'impl': 'asio-mt'},
-	{'path': '\\\\.\\COM3', 'baud': 38400,  'impl': 'asio-mt'},
-	#{'path': '\\\\.\\COM1', 'baud': 38400,  'impl': 'blockwise'}
+    {'path': '\\\\.\\COM3', 'baud': 38400,  'impl': 'asio-mt'},
+	{'path': '\\\\.\\COM4', 'baud': 38400,  'impl': 'asio-mt'},
+	{'path': '\\\\.\\COM6', 'baud': 38400,  'impl': 'asio-mt'}
 ]
 
 # Путь к библиотеке взаимодействия со считывателем

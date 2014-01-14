@@ -76,3 +76,27 @@ class card_plus_perso(APIHandler):
   answer['sn'] = card.sn.sn7()
 
   card.mfplus_personalize()
+
+class config_edrpou(APIHandler):
+ url = '/api/config/edrpou'
+
+ def GET(self, answer={}):
+  answer.update({
+   'request': {
+        'edrpou': 'строка, до 10 цифр, код предприятия в BCD-формате'
+    },
+    'response': {
+        'sn': 'Серийный номер бесконтактной карточки, число',
+        "error": 'Информация об ошибке, возникшей при выполнении вызова API.',
+    }
+  })
+
+  def POST(self, edrpou, answer={}):
+   edrpou = edrpou.rjust(10, '0')
+   edrpou = []
+
+   transport_card.EDRPOU = [int(edrpou[2*i:2*i+2], 16) for i in xrange(5)]
+
+   print transport_card.EDRPOU
+
+   assert(len(transport_cardd.EDROU), 5)

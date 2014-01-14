@@ -15,6 +15,8 @@ EMIT_KEY    = 2
 DIRTK_SECTOR = 2
 DIRTK_KEY    = 3
 
+EDRPOU= [0x00, 0x03, 0x32, 0x89, 0x13]  # default Kiev subway edrpou
+
 class ASPP(ASPPMixin,ByteArray(8)): pass
 
 class EMIT_SECTOR_DATA(DumpableBigEndianStructure):
@@ -44,14 +46,13 @@ class EMIT_SECTOR_DATA(DumpableBigEndianStructure):
              ('_unused'              ,ByteArray(18)) # mac included
  ]
 
- EDRPOU_KIEV_METRO = [0x00, 0x03, 0x32, 0x89, 0x13]
  VALID_STATUS = 1
  SECTOR = 1
  EXPIRED_MESSAGE = 'Transport card validity has been expired'
 
  def __init__(self, aspp):
   self.version = 1
-  self.provider[:] = self.EDRPOU_KIEV_METRO
+  self.provider[:] = EDRPOU
 
   self.aspp = ASPP.convert(aspp)
   self.pay_unit = 0x9000
@@ -74,7 +75,7 @@ class EMIT_SECTOR_DATA(DumpableBigEndianStructure):
   if not data.crc16_check(low_endian=0): raise CRCError(1)
 
   emit_data = data.cast(cls)
-  if emit_data.provider != cls.EDRPOU_KIEV_METRO: raise DataError(1)
+  if emit_data.provider != EDRPOU: raise DataError(1)
 
   if emit_data.status != cls.VALID_STATUS or emit_data.version != 1: raise StatusError(1)
 

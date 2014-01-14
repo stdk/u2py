@@ -146,12 +146,12 @@ if __name__ == "__main__":
 
  #print init(card)
 
- #transport_card.validate(card=card)
+ transport_card.validate(card=card)
 
- #get_value(card)
+ print get_value(card)
 
  #print card
 
- #print change_value(card=card,value=-100)
+ #print change_value(card=card,amount=20000)
 
  #print card.contract_list
