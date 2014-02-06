@@ -23,7 +23,8 @@ class TestBase(unittest.TestCase):
 
   if check:
    if error != None:
-    self.assertEqual(json_response['error']['type'],error)
+    json_error = json_response['error']['type']
+    self.assertTrue(json_error in error or json_error == error)
    else:
     self.assertEqual(json_response['error'],error)
 
@@ -33,10 +34,18 @@ class TestCardBase(TestBase):
  def scan(self,**kw):
   return self.send_command('/api/scan',self.base_request,**kw)
 
- def init_transport_card(self,aspp):
-  request = {'aspp': aspp}
+ def edrpou(self, value, check=False, **kw):
+  request = {'edrpou': value, 'check': check}
+  request.update(self.base_request)
+  return self.send_command('/api/config/edrpou', request, **kw)
+
+ def init_transport_card(self,request):
   request.update(self.base_request)
   return self.send_command('/api/card/init',request)
+
+ def options(self, request, **kw):
+  request.update(self.base_request)
+  return self.send_command('/api/card/options', request, **kw)
 
  def clear_card(self):
   return self.send_command('/api/card/clear',self.base_request)
@@ -51,7 +60,7 @@ class TestCardBase(TestBase):
   self.base_request['sn'] = A['sn']
 
   self.clear_card()
-  C = self.scan(error = 'SectorReadError')
+  C = self.scan(error = ['SectorReadError', 'CRCError'])
   self.assertEqual(C['sn'],self.base_request['sn'])
 
  def tearDown(self):

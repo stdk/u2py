@@ -34,7 +34,7 @@ class TermContract(TestCardBase):
   super(TermContract,self).setUp()
 
   self.aspp = '1111222233334444'
-  self.init_transport_card(aspp = self.aspp)
+  self.init_transport_card({ 'aspp': self.aspp })
 
   self.deposit = 234
   self.init(self.deposit)

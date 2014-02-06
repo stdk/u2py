@@ -2,6 +2,7 @@
 import config
 
 from u2py import __version__
+from u2py.mfex import ReaderError
 from adbk.state import State
 
 class version(APIHandler):
@@ -24,10 +25,12 @@ class version(APIHandler):
 
  def POST(self,reader = None,answer={},**kw):
   if reader != None:
-   answer.update({
-    'sn'     : reader.sn(),
-    'version': reader.version()
-   })
+   try:
+    answer['sn'] = reader.sn()
+   except ReaderError:
+    answer['sn'] = None
+
+   answer['version'] = reader.version()   
   else:
    answer['version'] = __version__
    answer['stoplist'] = State.get_stoplist_version()

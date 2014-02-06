@@ -262,4 +262,4 @@ if __name__ == '__main__':
  print reader.sn()
  print reader.version()
 
- print reader.scan().sector()
+ 

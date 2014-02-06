@@ -41,6 +41,9 @@ class scan(APIHandler):
     'aspp': 'АСПП номер транспортной карточки, строка вида 0000000000000000',
     'end_date': 'дата завершения валидности транспортной карточки, строка в формате DD/MM/YY',
     'deposit': 'залоговая стоимость транспортной карточки, число',
+    'pay_unit': 'код валюты, число',
+    'resource': 'ресурс карточки, число',
+    'status': 'статус контракта, число',
     'contracts': [
         'Список идентификаторов контрактов, присутствующих на транспортной карточке.',
         'В зависимости от содержимого этого списка, в ответ добавляются новые ключи с информацией о контрактах:',
@@ -112,6 +115,9 @@ class scan(APIHandler):
   answer['aspp']         = str(card.aspp)
   answer['end_date']     = card.end_date
   answer['deposit']      = card.deposit
+  answer['pay_unit']     = card.pay_unit
+  answer['resource']     = card.resource
+  answer['status']       = card.status
   answer['contracts']    = card.contract_list
   answer['purse_value']  = purse.get_value(card)
 

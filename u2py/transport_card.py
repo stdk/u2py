@@ -5,10 +5,11 @@ from ctypes import c_uint64,c_uint32,c_uint16,c_uint8,POINTER as P,pointer as p,
 from db import ASPPMixin
 from events import EVENT_CONTRACT_ZALOG
 from stoplist import Stoplist
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta,date
 from mfex import CardError,SectorReadError,SectorWriteError
 
 DEPOSIT_VALUE = 700
+DEFAULT_PAY_UNIT = 0x9000
 
 EMIT_SECTOR = 1
 EMIT_KEY    = 2
@@ -43,24 +44,25 @@ class EMIT_SECTOR_DATA(DumpableBigEndianStructure):
              ('personal_pointer'     ,c_uint32,4),
              ('stoplist_version'     ,c_uint32,16),
              ('_'                    ,c_uint32,8),
-             ('_unused'              ,ByteArray(18)) # mac included
+             ('resource'             ,c_uint64),
+             ('_unused'              ,ByteArray(10)) # mac included
  ]
 
  VALID_STATUS = 1
  SECTOR = 1
  EXPIRED_MESSAGE = 'Transport card validity has been expired'
 
- def __init__(self, aspp):
+ def __init__(self, **options):
   self.version = 1
   self.provider[:] = EDRPOU
 
-  self.aspp = ASPP.convert(aspp)
-  self.pay_unit = 0x9000
+  self.status = 1
+  self.pay_unit = DEFAULT_PAY_UNIT
   self.deposit_pay_unit = 0x800
   limit = datetime.now() + timedelta(days=365,hours=6) * 5 # + 5 years from now
   self.end_date = DATE(date = limit).to_int()
+  self.set_options(**options)
 
-  self.status = 1
   self.dirtk_pointer = DIRTK_SECTOR
   self.personal_pointer = 6
   self.event_log_version = 0
@@ -69,6 +71,21 @@ class EMIT_SECTOR_DATA(DumpableBigEndianStructure):
 
  def update_checksum(self):
   ByteArray(self).crc16_calc(low_endian=0)
+
+ def set_options(self, end_date=None, resource=None, aspp=None,
+                 status=None, pay_unit=None, **unused):
+  if end_date is not None:
+    self.end_date = DATE(date=datetime.strptime(end_date, '%d/%m/%y').date()).to_int()
+  if resource is not None:
+    self.resource = resource
+  if aspp is not None:
+    self.aspp = ASPP.convert(aspp)
+  if status is not None:
+    self.status = status
+  if pay_unit is not None:
+    self.pay_unit = pay_unit
+
+  self.update_checksum()
 
  @classmethod
  def validate(cls,data):
@@ -197,13 +214,16 @@ class TransportCard(Card):
   self.contract_list = dirtk.contract_list()
   self.deposit = emit_data.deposit
   self.end_date = DATE(uint16 = emit_data.end_date)
+  self.pay_unit = emit_data.pay_unit
+  self.resource = emit_data.resource
+  self.status = emit_data.status
 
-def init(card,aspp):
+def init(card, **options):
  from purse import init as purse_init
  from card_event import init as card_event_init
 
  emit_sector = card.sector(num=EMIT_SECTOR,key=0,method='full',read=False)
- emit_sector.data.cast(EMIT_SECTOR_DATA).__init__(aspp)
+ emit_sector.data.cast(EMIT_SECTOR_DATA).__init__(**options)
  emit_sector.write()
  emit_sector.set_trailer(EMIT_KEY)
 
@@ -215,6 +235,12 @@ def init(card,aspp):
 
  purse_init(card)
  card_event_init(card)
+
+def edit(card, **options):
+ emit_sector = card.sector(num=EMIT_SECTOR,key=EMIT_KEY,method='full')
+ data = EMIT_SECTOR_DATA.validate(emit_sector.data)
+ data.set_options(**options)
+ emit_sector.write()
 
 def clear(card,sectors):
  def clear_sector(card,num,key,mode):
@@ -245,11 +271,11 @@ if __name__ == "__main__":
  #validate(card)
  print card
 
- s = 'static'
- d = 'dynamic'
- print clear(card, [(1, 2,s),( 2,3,s),( 3,7,s),( 4,7,s),
-                    (5, 6,s),( 9,4,s),(10,5,s),(11,8,s),
-                    (6,21,s),(12,9,s),(13,27,d),(14,27,d)])
+ #s = 'static'
+ #d = 'dynamic'
+ #print clear(card, [(1, 2,s),( 2,3,s),( 3,7,s),( 4,7,s),
+ #                   (5, 6,s),( 9,4,s),(10,5,s),(11,8,s),
+ #                   (6,21,s),(12,9,s),(13,27,d),(14,27,d)])
  #init(card,'0123456789ABCDEF',DEPOSIT_VALUE)
 
  #set_deposit(card,700)

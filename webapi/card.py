@@ -12,9 +12,13 @@ class card_init(APIHandler):
  def GET(self,answer={}):
   answer.update({
     'request': {
-        'reader' : 'число, индекс считывателя бесконтактных карточек',
-        'aspp'   : 'строка, АСПП номер транспортной карточки вида 0000000000000000',
-        'sn'     : 'опциональный параметр; cерийный номер требуемой бесконтактной карточки, число',
+        'reader'  : 'число, индекс считывателя бесконтактных карточек',
+        'sn'      : 'опциональный параметр; cерийный номер требуемой бесконтактной карточки, число',
+        'aspp'    : 'строка, АСПП номер транспортной карточки вида 0000000000000000',
+        'end_date': 'опциональный параметр; дата завершения валидности транспортной карточки, строка в формате DD/MM/YY',
+        'resource': 'опциональный параметр; ресурс транспортной карточки, число, 8 байт',
+        'pay_unit': 'опциональный параметр; код валюты, число, 2 байта',
+        'status'  : 'опциональный параметр; статус карточки, число, 1 байт',
     },
     'response': {
         'sn': 'Серийный номер бесконтактной карточки, число',
@@ -26,7 +30,34 @@ class card_init(APIHandler):
  def POST(self,reader, aspp, sn = None, answer={}, **kw):
   card = reader.scan(sn)
   answer['sn'] = card.sn.sn7()
-  transport_card.init(card,aspp)
+  transport_card.init(card,aspp=aspp, **kw)
+
+class card_options(APIHandler):
+ url = '/api/card/options'
+
+ need_server = config.write_api_requires_server
+
+ def GET(self, answer={}):
+  answer.update({
+    'request': {
+        'reader'  : 'число, индекс считывателя бесконтактных карточек',
+        'sn'      : 'опциональный параметр; cерийный номер требуемой бесконтактной карточки, число',
+        'aspp'    : 'опциональный параметр; строка, АСПП номер транспортной карточки вида 0000000000000000',
+        'end_date': 'опциональный параметр; дата завершения валидности транспортной карточки, строка в формате DD/MM/YY',
+        'resource': 'опциональный параметр; ресурс транспортной карточки, число, 8 байт',
+        'pay_unit': 'опциональный параметр; код валюты, число, 2 байта',
+        'status'  : 'опциональный параметр; статус карточки, число, 1 байт',
+    },
+    'response': {
+        'sn': 'Серийный номер бесконтактной карточки, число',
+        "error": 'Информация об ошибке, возникшей при выполнении вызова API.',
+    }
+  })
+
+ def POST(self,reader, sn = None, answer={}, **kw):
+  card = reader.scan(sn)
+  answer['sn'] = card.sn.sn7()
+  transport_card.edit(card,**kw)
 
 class card_clear(APIHandler):
  url = '/api/card/clear'
@@ -81,7 +112,7 @@ class card_plus_perso(APIHandler):
 class InequalityError(Exception):
  def __init__(self, message):
   super(InequalityError,self).__init__(message)
-  
+
 class config_edrpou(APIHandler):
  url = '/api/config/edrpou'
 
@@ -101,13 +132,12 @@ class config_edrpou(APIHandler):
  def POST(self, reader, edrpou, check=False, answer={}, **kw):
   edrpou = edrpou.rjust(10, '0')
   edrpou = [int(edrpou[2*i:2*i+2], 16) for i in xrange(5)]
-  
+
   if check and edrpou != transport_card.EDRPOU:
    raise InequalityError('EDRPOU values are not equal')
-  else:  
-   print transport_card.EDRPOU
+  else:
    transport_card.EDRPOU = edrpou
-   
+
 class purse_refill(APIHandler):
  url = '/api/purse/refill'
 
@@ -134,5 +164,3 @@ class purse_refill(APIHandler):
    answer['aspp'] = str(card.aspp)
 
    purse.change_value(card, int(amount))
-   
-print purse_refill
